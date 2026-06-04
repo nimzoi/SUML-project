@@ -23,11 +23,36 @@ from model.evaluate import regression_metrics
 logger = logging.getLogger(__name__)
 
 
-def train(config: AppConfig) -> Dict:
+def _monotone_constraints(columns, increasing) -> str:
+    """Build a LightGBM monotone_constraints string (+1 for the increasing numeric features)."""
+    wanted = set(increasing)
+    return ",".join(
+        "1" if (col.startswith("num__") and col.split("__", 1)[1] in wanted) else "0"
+        for col in columns
+    )
+
+
+def train(config: AppConfig) -> Dict:  # pylint: disable=too-many-locals
     """Run the full training pipeline and write model.joblib + metrics.json."""
     df = load_data(config)
     data_source = "real" if Path(config.data.raw_path).exists() else "synthetic"
     x_train, x_test, y_train, y_test = split_data(df, config)
+
+    preprocessor = build_preprocessor(config)
+    x_train_t = preprocessor.fit_transform(x_train)
+
+    fit_kwargs = {
+        "task": config.model.task,
+        "time_budget": config.model.time_budget_s,
+        "metric": config.model.metric,
+        "estimator_list": config.model.estimator_list,
+        "ensemble": config.model.ensemble,
+        "seed": config.model.seed,
+        "verbose": 0,
+    }
+    if config.model.monotone_increasing:
+        constraints = _monotone_constraints(x_train_t.columns, config.model.monotone_increasing)
+        fit_kwargs["custom_hp"] = {"lgbm": {"monotone_constraints": {"domain": constraints}}}
 
     model_step = AutoML()
     if config.model.log_target:
@@ -35,22 +60,11 @@ def train(config: AppConfig) -> Dict:
         model_step = TransformedTargetRegressor(
             regressor=AutoML(), func=np.log1p, inverse_func=np.expm1
         )
-    pipeline = Pipeline(steps=[("prep", build_preprocessor(config)), ("model", model_step)])
-    pipeline.fit(
-        x_train,
-        y_train,
-        model__task=config.model.task,
-        model__time_budget=config.model.time_budget_s,
-        model__metric=config.model.metric,
-        model__estimator_list=config.model.estimator_list,
-        model__ensemble=config.model.ensemble,
-        model__seed=config.model.seed,
-        model__verbose=0,
-    )
+    model_step.fit(x_train_t, y_train, **fit_kwargs)
 
+    pipeline = Pipeline(steps=[("prep", preprocessor), ("model", model_step)])
     metrics = regression_metrics(y_test, pipeline.predict(x_test))
-    fitted_model = pipeline.named_steps["model"]
-    automl = getattr(fitted_model, "regressor_", fitted_model)
+    automl = getattr(model_step, "regressor_", model_step)
     report = {
         **metrics,
         "best_estimator": automl.best_estimator,
@@ -75,8 +89,7 @@ def _feature_importance(
 ) -> Dict[str, float]:
     """Model-agnostic permutation importance keyed by input feature.
 
-    Works for any estimator (including stacked ensembles that lack
-    feature_importances_): measures the drop in R2 when each input column is shuffled.
+    Works for any estimator: measures the drop in R2 when each input column is shuffled.
     """
     try:
         result = permutation_importance(

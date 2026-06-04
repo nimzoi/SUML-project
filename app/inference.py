@@ -6,6 +6,8 @@ from typing import Dict
 
 import pandas as pd
 
+from data.features import CPU_RANK
+
 # Map snake_case request fields to the model's engineered column names.
 REQUEST_TO_COLUMN = {
     "company": "Company",
@@ -16,7 +18,6 @@ REQUEST_TO_COLUMN = {
     "touchscreen": "Touchscreen",
     "ips": "Ips",
     "ppi": "ppi",
-    "cpu_brand": "Cpu_brand",
     "ssd_gb": "SSD",
     "hdd_gb": "HDD",
     "gpu_brand": "Gpu_brand",
@@ -27,9 +28,11 @@ REQUEST_TO_COLUMN = {
 def to_feature_row(payload: Dict) -> pd.DataFrame:
     """Map a snake_case request payload to a one-row model-input DataFrame.
 
-    Column order does not matter: the pipeline's ColumnTransformer selects by name.
+    The CPU brand is converted to its ordinal rank; column order does not matter
+    (the pipeline's ColumnTransformer selects by name).
     """
     row = {column: payload[field] for field, column in REQUEST_TO_COLUMN.items()}
+    row["Cpu_rank"] = CPU_RANK[payload["cpu_brand"]]
     return pd.DataFrame([row])
 
 

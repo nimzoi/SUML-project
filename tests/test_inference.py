@@ -36,7 +36,7 @@ def test_to_feature_row_shape_and_columns():
         "Touchscreen",
         "Ips",
         "ppi",
-        "Cpu_brand",
+        "Cpu_rank",
         "SSD",
         "HDD",
         "Gpu_brand",

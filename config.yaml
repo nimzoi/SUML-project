@@ -14,10 +14,10 @@ data:
     - HDD
     - Touchscreen
     - Ips
+    - Cpu_rank
   categorical_features:
     - Company
     - TypeName
-    - Cpu_brand
     - Gpu_brand
     - Os
   test_size: 0.2
@@ -28,10 +28,14 @@ model:
   metric: r2
   estimator_list:
     - lgbm
-    - rf
-    - extra_tree
-  ensemble: true
+  ensemble: false
   log_target: true
+  monotone_increasing:
+    - Ram
+    - SSD
+    - HDD
+    - ppi
+    - Cpu_rank
   artifact_dir: model/artifacts
   artifact_name: model.joblib
   metrics_name: metrics.json

@@ -7,6 +7,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from data.features import CPU_RANK
+
 COLUMNS: List[str] = [
     "Company",
     "TypeName",
@@ -16,7 +18,7 @@ COLUMNS: List[str] = [
     "Touchscreen",
     "Ips",
     "ppi",
-    "Cpu_brand",
+    "Cpu_rank",
     "SSD",
     "HDD",
     "Gpu_brand",
@@ -65,8 +67,9 @@ def generate(n_rows: int = 1300, seed: int = 42) -> pd.DataFrame:  # pylint: dis
     """Return a DataFrame with the same engineered columns/types as the real dataset.
 
     Price is a noisy linear function of specs (RAM, storage, screen density, CPU/GPU tier,
-    chassis type and brand premium). About 2% of cells in a couple of columns are set to
-    NaN so the imputation path is exercised even without the real CSV.
+    chassis type and brand premium). The CPU is stored as an ordinal rank (i3<i5<i7).
+    About 2% of cells in a couple of columns are set to NaN so the imputation path is
+    exercised even without the real CSV.
     """
     rng = np.random.default_rng(seed)
     company = rng.choice(COMPANIES, n_rows)
@@ -109,7 +112,7 @@ def generate(n_rows: int = 1300, seed: int = 42) -> pd.DataFrame:  # pylint: dis
             "Touchscreen": touchscreen,
             "Ips": ips,
             "ppi": ppi,
-            "Cpu_brand": cpu,
+            "Cpu_rank": [CPU_RANK[c] for c in cpu],
             "SSD": ssd,
             "HDD": hdd,
             "Gpu_brand": gpu,

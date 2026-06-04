@@ -42,7 +42,7 @@ def test_saved_pipeline_predicts(tmp_path):
                 "Ips": 1,
                 "Company": "Dell",
                 "TypeName": "Notebook",
-                "Cpu_brand": "Intel Core i5",
+                "Cpu_rank": 2,
                 "Gpu_brand": "Intel",
                 "Os": "Windows",
             }

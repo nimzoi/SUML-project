@@ -18,13 +18,16 @@ ENGINEERED_COLUMNS = [
     "Touchscreen",
     "Ips",
     "ppi",
-    "Cpu_brand",
+    "Cpu_rank",
     "SSD",
     "HDD",
     "Gpu_brand",
     "Os",
     "Price",
 ]
+
+
+CPU_RANK = {"Other Intel": 0, "AMD": 1, "Intel Core i3": 1, "Intel Core i5": 2, "Intel Core i7": 3}
 
 
 def _cpu_brand(text: str) -> str:
@@ -69,7 +72,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["Ips"] = df["ScreenResolution"].str.contains("IPS").astype(int)
     resolution = df["ScreenResolution"].str.extract(r"(\d+)x(\d+)").astype(float)
     df["ppi"] = ((resolution[0] ** 2 + resolution[1] ** 2) ** 0.5 / df["Inches"]).round(2)
-    df["Cpu_brand"] = df["Cpu"].apply(_cpu_brand)
+    df["Cpu_rank"] = df["Cpu"].apply(lambda text: CPU_RANK[_cpu_brand(text)])
     df[["SSD", "HDD"]] = df["Memory"].apply(_parse_memory)
     df["Gpu_brand"] = df["Gpu"].apply(lambda text: str(text).split()[0])
     df = df[df["Gpu_brand"] != "ARM"]
