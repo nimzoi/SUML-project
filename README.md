@@ -14,7 +14,7 @@ Delivery platforms (Wolt / Glovo / Uber Eats style) need an accurate ETA at orde
 time to set customer expectations, dispatch couriers, and flag orders at risk of
 being late. This project trains a regression model that estimates delivery time
 from distance, weather, traffic, preparation time, and courier experience, and
-exposes it through a `/predict` endpoint. Baseline: **MAE ≈ 6.4 min, R² ≈ 0.81**.
+exposes it through a `/predict` endpoint. Baseline: **MAE ≈ 6.1 min, R² ≈ 0.82**.
 
 ## Architecture
 
@@ -82,6 +82,8 @@ docker compose up --build
 The dataset is committed and the model is trained during the image build, so this
 runs end-to-end on real data with no manual steps.
 
+![Streamlit UI](docs/img/ui.png)
+
 ## Run natively (without Docker)
 
 ```bash
@@ -100,7 +102,7 @@ Single source of truth, validated on load. Key sections:
 - `data` — dataset path, synthetic-generation toggle + size + seed, target,
   numeric/categorical feature lists, test split.
 - `model` — AutoML task, `time_budget_s`, metric, `estimator_list`
-  (`lgbm`, `rf`, `extra_tree`), artifact paths, seed. **This is the AutoML config.**
+  (`lgbm`, `rf`, `extra_tree`), `ensemble` (stacking), artifact paths, seed. **This is the AutoML config.**
 - `api` / `ui` — host/port and the API URL the UI calls.
 
 ## Data
@@ -126,7 +128,7 @@ code changes. The app picks up the new artifact on restart.
   "preparation_time_min": 12, "courier_experience_yrs": 2.0 }
 ```
 
-→ `{ "eta_minutes": 44.9 }`  *(example value)*
+→ `{ "eta_minutes": 44.6 }`  *(example value)*
 
 - `GET /health` → `{ "status": "ok", "model_loaded": true }`
 - `GET /model-info` → metrics + metadata (best estimator, training date, data source,

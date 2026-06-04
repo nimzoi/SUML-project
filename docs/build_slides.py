@@ -1,4 +1,5 @@
 """Build the SUML presentation deck (slides.pptx). Run: python docs/build_slides.py"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -40,8 +41,22 @@ def slide(bg=LIGHT, motif=True):
     return s
 
 
-def text(s, left, top, width, height, lines, size=16, color=DARK, bold=False,
-         font=BODY, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP, bullet=False, space=8):
+def text(
+    s,
+    left,
+    top,
+    width,
+    height,
+    lines,
+    size=16,
+    color=DARK,
+    bold=False,
+    font=BODY,
+    align=PP_ALIGN.LEFT,
+    anchor=MSO_ANCHOR.TOP,
+    bullet=False,
+    space=8,
+):
     box = s.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
     tf = box.text_frame
     tf.word_wrap = True
@@ -67,8 +82,9 @@ def title(s, label, color=NAVY):
 
 
 def rrect(s, left, top, width, height, fill, line=None):
-    shp = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top),
-                             Inches(width), Inches(height))
+    shp = s.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height)
+    )
     shp.fill.solid()
     shp.fill.fore_color.rgb = fill
     if line is None:
@@ -132,21 +148,49 @@ def panel(s, left, top, width, height, header, lines):
 s = slide(NAVY, motif=False)
 rrect(s, 0, 0, 0.32, 7.5, TEAL)
 text(s, 0.9, 2.3, 11.5, 1.4, "Food Delivery ETA", size=54, color=WHITE, bold=True, font=HEAD)
-text(s, 0.9, 3.7, 11.5, 0.9,
-     "Predykcja czasu dostawy jedzenia — AutoML, FastAPI, Streamlit, Docker",
-     size=22, color=ICE, font=BODY)
-text(s, 0.9, 5.5, 11.5, 0.5, "SUML — Środowiska uruchomieniowe ML · PJATK",
-     size=16, color=WHITE, bold=True, font=BODY)
+text(
+    s,
+    0.9,
+    3.7,
+    11.5,
+    0.9,
+    "Predykcja czasu dostawy jedzenia — AutoML, FastAPI, Streamlit, Docker",
+    size=22,
+    color=ICE,
+    font=BODY,
+)
+text(
+    s,
+    0.9,
+    5.5,
+    11.5,
+    0.5,
+    "SUML — Środowiska uruchomieniowe ML · PJATK",
+    size=16,
+    color=WHITE,
+    bold=True,
+    font=BODY,
+)
 text(s, 0.9, 6.0, 11.5, 0.5, "Grupa: [numery indeksów]", size=15, color=ICE, font=BODY)
 
 # --- Slide 2: problem ---
 s = slide()
 title(s, "Problem i wartość biznesowa")
-text(s, 0.7, 1.9, 6.6, 4.6, [
-    "Platformy dostaw (Wolt, Glovo, Uber Eats) potrzebują trafnego ETA już w momencie zamówienia.",
-    "Dobre ETA = realne oczekiwania klienta, sprawniejsza dyspozycja kurierów i wczesne flagowanie opóźnień.",
-    "Aplikacja przewiduje czas dostawy (regresja) na podstawie cech zamówienia, trasy i kontekstu.",
-], size=17, bullet=True, space=14)
+text(
+    s,
+    0.7,
+    1.9,
+    6.6,
+    4.6,
+    [
+        "Platformy dostaw (Wolt, Glovo, Uber Eats) potrzebują trafnego ETA już w momencie zamówienia.",
+        "Dobre ETA = realne oczekiwania klienta, sprawniejsza dyspozycja kurierów i wczesne flagowanie opóźnień.",
+        "Aplikacja przewiduje czas dostawy (regresja) na podstawie cech zamówienia, trasy i kontekstu.",
+    ],
+    size=17,
+    bullet=True,
+    space=14,
+)
 s_img = IMG / "distance_vs_time.png"
 if s_img.exists():
     s.shapes.add_picture(str(s_img), Inches(7.6), Inches(2.1), width=Inches(5.2))
@@ -154,12 +198,22 @@ if s_img.exists():
 # --- Slide 3: data ---
 s = slide()
 title(s, "Dane")
-text(s, 0.7, 1.9, 6.6, 4.6, [
-    "Źródło: Kaggle denkuznetz/food-delivery-time-prediction (1000 wierszy, 9 kolumn).",
-    "CSV dołączony do repo + generator danych syntetycznych o tym samym schemacie (fallback).",
-    "Braki: po 30 w 4 kolumnach → imputacja w pipeline (mediana / najczęstsza wartość).",
-    "Cel: czas dostawy 8–153 min (średnio ~57).",
-], size=16, bullet=True, space=12)
+text(
+    s,
+    0.7,
+    1.9,
+    6.6,
+    4.6,
+    [
+        "Źródło: Kaggle denkuznetz/food-delivery-time-prediction (1000 wierszy, 9 kolumn).",
+        "CSV dołączony do repo + generator danych syntetycznych o tym samym schemacie (fallback).",
+        "Braki: po 30 w 4 kolumnach → imputacja w pipeline (mediana / najczęstsza wartość).",
+        "Cel: czas dostawy 8–153 min (średnio ~57).",
+    ],
+    size=16,
+    bullet=True,
+    space=12,
+)
 t_img = IMG / "target_hist.png"
 if t_img.exists():
     s.shapes.add_picture(str(t_img), Inches(7.7), Inches(2.2), width=Inches(5.0))
@@ -195,7 +249,9 @@ for (name, desc), x in zip(boxes, xs):
         r3.font.name = BODY
         r3.font.color.rgb = DARK
 for ax in (4.45, 8.45):
-    arr = s.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, Inches(ax), Inches(3.35), Inches(0.4), Inches(0.5))
+    arr = s.shapes.add_shape(
+        MSO_SHAPE.RIGHT_ARROW, Inches(ax), Inches(3.35), Inches(0.4), Inches(0.5)
+    )
     arr.fill.solid()
     arr.fill.fore_color.rgb = TEAL
     arr.line.fill.background()
@@ -216,12 +272,22 @@ r.font.color.rgb = WHITE
 # --- Slide 5: AutoML ---
 s = slide()
 title(s, "Model: AutoML (FLAML)")
-text(s, 0.7, 1.9, 6.6, 4.6, [
-    "AutoML.fit przeszukuje estymatory (lgbm, rf, extra_tree) w zadanym budżecie czasu.",
-    "Cały preprocessing + model zapisany jako jeden sklearn Pipeline (model.joblib).",
-    "Imputacja + one-hot w pipeline → spójność trening / serwowanie, bez wycieków.",
-    "Konfiguracja AutoML w config.yaml (budżet, metryka, lista estymatorów).",
-], size=16, bullet=True, space=12)
+text(
+    s,
+    0.7,
+    1.9,
+    6.6,
+    4.6,
+    [
+        "AutoML.fit przeszukuje estymatory (lgbm, rf, extra_tree) i składa je w ensemble (stacking).",
+        "Cały preprocessing + model zapisany jako jeden sklearn Pipeline (model.joblib).",
+        "Imputacja + one-hot w pipeline → spójność trening / serwowanie, bez wycieków.",
+        "Konfiguracja AutoML w config.yaml (budżet, metryka, lista estymatorów).",
+    ],
+    size=16,
+    bullet=True,
+    space=12,
+)
 f_img = IMG / "feat_importance.png"
 if f_img.exists():
     s.shapes.add_picture(str(f_img), Inches(7.6), Inches(2.2), width=Inches(5.2))
@@ -229,41 +295,75 @@ if f_img.exists():
 # --- Slide 6: results ---
 s = slide()
 title(s, "Wyniki modelu")
-card(s, 0.9, 2.5, 3.6, 2.2, "6,4", "MAE (minuty)")
-card(s, 4.85, 2.5, 3.6, 2.2, "9,3", "RMSE")
-card(s, 8.8, 2.5, 3.6, 2.2, "0,81", "R²")
-text(s, 0.9, 5.1, 11.5, 0.8,
-     "Najlepszy estymator: LightGBM · ocena na 20% zbiorze testowym · najważniejsza cecha: dystans.",
-     size=16, color=MUTED, align=PP_ALIGN.CENTER)
+card(s, 0.9, 2.5, 3.6, 2.2, "6,1", "MAE (minuty)")
+card(s, 4.85, 2.5, 3.6, 2.2, "9,0", "RMSE")
+card(s, 8.8, 2.5, 3.6, 2.2, "0,82", "R²")
+text(
+    s,
+    0.9,
+    5.1,
+    11.5,
+    0.8,
+    "Model: FLAML ensemble (baza LightGBM) · ocena na 20% holdout · najważniejsza cecha: dystans.",
+    size=16,
+    color=MUTED,
+    align=PP_ALIGN.CENTER,
+)
 
 # --- Slide 7: serving ---
 s = slide()
 title(s, "Wystawienie: API + UI")
-panel(s, 0.8, 2.0, 5.7, 4.2, "FastAPI (usługa)", [
-    "POST /predict — predykcja ETA (minuty)",
-    "GET /health — status + czy model wczytany",
-    "GET /model-info — metryki i metadane",
-    "Interaktywne /docs (OpenAPI) za darmo",
-    "Walidacja wejścia Pydantic → 422 dla błędnych danych",
-])
-panel(s, 6.8, 2.0, 5.7, 4.2, "Streamlit (UI)", [
-    "Formularz cech zamówienia",
-    "Woła API i pokazuje przewidziany czas",
-    "Panel z metrykami modelu",
-    "Wykres ważności cech",
-    "Konfigurowalny adres API (env / config)",
-])
+panel(
+    s,
+    0.8,
+    2.0,
+    5.7,
+    4.2,
+    "FastAPI (usługa)",
+    [
+        "POST /predict — predykcja ETA (minuty)",
+        "GET /health — status + czy model wczytany",
+        "GET /model-info — metryki i metadane",
+        "Interaktywne /docs (OpenAPI) za darmo",
+        "Walidacja wejścia Pydantic → 422 dla błędnych danych",
+    ],
+)
+panel(
+    s,
+    6.8,
+    2.0,
+    5.7,
+    4.2,
+    "Streamlit (UI)",
+    [
+        "Formularz cech zamówienia",
+        "Woła API i pokazuje przewidziany czas",
+        "Panel z metrykami modelu",
+        "Wykres ważności cech",
+        "Konfigurowalny adres API (env / config)",
+    ],
+)
 
 # --- Slide 8: portability ---
 s = slide()
 title(s, "Przenoszalność i odtwarzalność")
-text(s, 0.7, 1.9, 7.2, 4.6, [
-    "docker compose up --build → dwa serwisy: api (FastAPI) + ui (Streamlit).",
-    "Model trenowany podczas budowania obrazu — gotowy przy pierwszym żądaniu.",
-    "Zależności przypięte (requirements.txt); obraz python:3.11-slim, użytkownik non-root.",
-    "Zero konfiguracji systemu operacyjnego; .gitattributes wymusza końce linii LF.",
-    "config.yaml jako jedno źródło prawdy.",
-], size=16, bullet=True, space=11)
+text(
+    s,
+    0.7,
+    1.9,
+    7.2,
+    4.6,
+    [
+        "docker compose up --build → dwa serwisy: api (FastAPI) + ui (Streamlit).",
+        "Model trenowany podczas budowania obrazu — gotowy przy pierwszym żądaniu.",
+        "Zależności przypięte (requirements.txt); obraz python:3.11-slim, użytkownik non-root.",
+        "Zero konfiguracji systemu operacyjnego; .gitattributes wymusza końce linii LF.",
+        "config.yaml jako jedno źródło prawdy.",
+    ],
+    size=16,
+    bullet=True,
+    space=11,
+)
 banner = rrect(s, 8.3, 2.4, 4.2, 2.4, TEAL)
 tf = banner.text_frame
 tf.word_wrap = True
@@ -285,21 +385,42 @@ title(s, "Jakość kodu i organizacja")
 card(s, 0.9, 2.4, 3.6, 2.0, "10/10", "pylint")
 card(s, 4.85, 2.4, 3.6, 2.0, "26", "testów (pytest)")
 card(s, 8.8, 2.4, 3.6, 2.0, "CI", "GitHub Actions")
-text(s, 0.7, 4.8, 12.0, 1.8, [
-    "PEP8 + black + isort, type hints i docstringi w całym kodzie.",
-    "Ścisły podział data | model | app; modularność na poziomie funkcji i katalogów.",
-    "Czytelna historia commitów; spec i plan w docs/.",
-], size=16, bullet=True, space=10)
+text(
+    s,
+    0.7,
+    4.8,
+    12.0,
+    1.8,
+    [
+        "PEP8 + black + isort, type hints i docstringi w całym kodzie.",
+        "Ścisły podział data | model | app; modularność na poziomie funkcji i katalogów.",
+        "Czytelna historia commitów; spec i plan w docs/.",
+    ],
+    size=16,
+    bullet=True,
+    space=10,
+)
 
 # --- Slide 10: demo + closing (dark) ---
 s = slide(NAVY, motif=False)
 rrect(s, 0, 0, 0.32, 7.5, TEAL)
 title(s, "Demo i podsumowanie", color=WHITE)
-text(s, 0.9, 1.9, 11.4, 4.0, [
-    "Demo: docker compose up --build → UI :8501, API :8000/docs → predykcja na żywo.",
-    "Retraining: nowy CSV w data/raw/ + python -m model.train (bez zmian w kodzie).",
-    "Repo: github.com/nimzoi/SUML-project",
-], size=18, color=ICE, bullet=True, space=14)
+text(
+    s,
+    0.9,
+    1.9,
+    11.4,
+    4.0,
+    [
+        "Demo: docker compose up --build → UI :8501, API :8000/docs → predykcja na żywo.",
+        "Retraining: nowy CSV w data/raw/ + python -m model.train (bez zmian w kodzie).",
+        "Repo: github.com/nimzoi/SUML-project",
+    ],
+    size=18,
+    color=ICE,
+    bullet=True,
+    space=14,
+)
 text(s, 0.9, 6.0, 11.4, 0.8, "Dziękujemy — pytania?", size=24, color=WHITE, bold=True, font=HEAD)
 
 prs.save("slides.pptx")

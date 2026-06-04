@@ -35,7 +35,7 @@ them identically.
 ![Distance vs delivery time](img/distance_vs_time.png)
 
 ## Baseline model
-FLAML AutoML (best estimator: **LightGBM**) on a 20% holdout:
-**MAE ≈ 6.4 min · RMSE ≈ 9.3 · R² ≈ 0.81.** Top features: distance, preparation time, courier
-experience, traffic level. Live values are written to `model/artifacts/metrics.json` after
+FLAML AutoML with a stacked ensemble (base estimator: **LightGBM**) on a 20% holdout:
+**MAE ≈ 6.1 min · RMSE ≈ 9.0 · R² ≈ 0.82.** Top features (permutation importance): distance,
+preparation time, traffic, weather. Live values are written to `model/artifacts/metrics.json` after
 training and served at `GET /model-info`.
