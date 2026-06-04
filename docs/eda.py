@@ -1,4 +1,5 @@
 """Generate EDA plots for the data card. Run from the repo root: python docs/eda.py"""
+
 # isort: skip_file
 from __future__ import annotations
 
