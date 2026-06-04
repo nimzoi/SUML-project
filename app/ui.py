@@ -1,8 +1,8 @@
-"""Streamlit UI for the Laptop Price service.
+"""Interfejs Streamlit do wyceny laptopa.
 
-Two modes, same code: it calls the FastAPI service when reachable, otherwise it loads
-the model directly and predicts in-process. The standalone fallback lets the exact same
-app run on Streamlit Community Cloud, where only the Streamlit process is hosted.
+Dwa tryby, ten sam kod: woła usługę FastAPI, a gdy API jest niedostępne, ładuje model
+bezpośrednio i liczy w procesie. Dzięki temu ta sama aplikacja działa też samodzielnie
+na Streamlit Community Cloud (gdzie hostowany jest tylko proces Streamlit).
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from model.train import train
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 REQUEST_TIMEOUT = 10
+PLN_PER_INR = 0.045  # kurs orientacyjny, tylko do poglądowego przeliczenia
 RESOLUTIONS = {
     "1366 x 768": (1366, 768),
     "1920 x 1080 (Full HD)": (1920, 1080),
@@ -30,9 +31,9 @@ RESOLUTIONS = {
 }
 
 
-@st.cache_resource(show_spinner="Loading model...")
+@st.cache_resource(show_spinner="Ładowanie modelu...")
 def _local_model():
-    """Load the model artifact, training it once if missing (standalone mode)."""
+    """Załaduj artefakt modelu, trenując go raz, jeśli go brakuje (tryb standalone)."""
     config = load_config()
     if not config.artifact_path.exists():
         train(config)
@@ -40,7 +41,7 @@ def _local_model():
 
 
 def get_prediction(payload: dict):
-    """Return (price, source): try the API, fall back to the local model."""
+    """Zwróć (cena, źródło): najpierw API, w razie braku — model lokalny."""
     try:
         response = requests.post(f"{API_URL}/predict", json=payload, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -50,7 +51,7 @@ def get_prediction(payload: dict):
 
 
 def get_model_info() -> dict:
-    """Return model metrics/metadata from the API, or the local metrics file."""
+    """Zwróć metryki/metadane modelu z API lub z lokalnego pliku metryk."""
     try:
         return requests.get(f"{API_URL}/model-info", timeout=REQUEST_TIMEOUT).json()
     except requests.RequestException:
@@ -61,33 +62,42 @@ def get_model_info() -> dict:
         return {}
 
 
+def _money(value: float) -> str:
+    """Sformatuj kwotę ze spacją jako separatorem tysięcy."""
+    return f"{value:,.0f}".replace(",", " ")
+
+
 def main() -> None:  # pylint: disable=too-many-locals
-    """Render the laptop spec form and show the predicted price."""
-    st.set_page_config(page_title="Laptop Price", page_icon="💻")
-    st.title("💻 Laptop Price Predictor")
-    st.caption("Estimate a laptop's price from its specifications.")
+    """Wyrenderuj formularz specyfikacji i pokaż szacowaną cenę."""
+    st.set_page_config(page_title="Wycena laptopa", page_icon="💻")
+    st.title("💻 Wycena laptopa")
+    st.caption(
+        "Szybka wycena laptopa na podstawie jego specyfikacji — wpisz parametry, poznaj cenę."
+    )
 
     col1, col2 = st.columns(2)
     with col1:
-        company = st.selectbox("Brand", [e.value for e in Company])
-        type_name = st.selectbox("Type", [e.value for e in TypeName])
-        cpu_brand = st.selectbox("CPU", [e.value for e in CpuBrand])
-        gpu_brand = st.selectbox("GPU", [e.value for e in GpuBrand])
-        operating_system = st.selectbox("Operating system", [e.value for e in Os])
-        inches = st.number_input("Screen size (inches)", min_value=10.0, max_value=20.0, value=15.6)
+        company = st.selectbox("Marka", [e.value for e in Company])
+        type_name = st.selectbox("Typ", [e.value for e in TypeName])
+        cpu_brand = st.selectbox("Procesor (CPU)", [e.value for e in CpuBrand])
+        gpu_brand = st.selectbox("Karta graficzna (GPU)", [e.value for e in GpuBrand])
+        operating_system = st.selectbox("System operacyjny", [e.value for e in Os])
+        inches = st.number_input(
+            "Przekątna ekranu (cale)", min_value=10.0, max_value=20.0, value=15.6
+        )
     with col2:
-        ram_gb = st.selectbox("RAM (GB)", [4, 8, 12, 16, 24, 32, 64], index=1)
-        ssd_gb = st.selectbox("SSD (GB)", [0, 128, 256, 512, 1024], index=2)
-        hdd_gb = st.selectbox("HDD (GB)", [0, 500, 1000, 2000], index=0)
-        weight_kg = st.number_input("Weight (kg)", min_value=0.5, max_value=5.0, value=1.6)
-        resolution = st.selectbox("Resolution", list(RESOLUTIONS), index=1)
-        touchscreen = st.checkbox("Touchscreen")
-        ips = st.checkbox("IPS panel", value=True)
+        ram_gb = st.selectbox("Pamięć RAM (GB)", [4, 8, 12, 16, 24, 32, 64], index=1)
+        ssd_gb = st.selectbox("Dysk SSD (GB)", [0, 128, 256, 512, 1024], index=2)
+        hdd_gb = st.selectbox("Dysk HDD (GB)", [0, 500, 1000, 2000], index=0)
+        weight_kg = st.number_input("Waga (kg)", min_value=0.5, max_value=5.0, value=1.6)
+        resolution = st.selectbox("Rozdzielczość ekranu", list(RESOLUTIONS), index=1)
+        touchscreen = st.checkbox("Ekran dotykowy")
+        ips = st.checkbox("Panel IPS", value=True)
 
     width, height = RESOLUTIONS[resolution]
     ppi = round((width**2 + height**2) ** 0.5 / inches, 2)
 
-    if st.button("Predict price"):
+    if st.button("Oszacuj cenę", type="primary"):
         payload = {
             "company": company,
             "type_name": type_name,
@@ -105,18 +115,33 @@ def main() -> None:  # pylint: disable=too-many-locals
         }
         try:
             price, source = get_prediction(payload)
-            st.success(f"Estimated price: {price:,.0f}  ·  ({source})")
+            st.metric("Szacowana cena", f"{_money(price)} INR")
+            st.caption(
+                f"≈ {_money(price * PLN_PER_INR)} PLN (kurs orientacyjny) · źródło: {source}"
+            )
         except (requests.RequestException, ValueError, KeyError) as ex:
-            st.error(f"Prediction failed: {ex}")
+            st.error(f"Nie udało się policzyć ceny: {ex}")
 
-    with st.expander("Model info & feature importance"):
+    with st.expander("ℹ️ Jak to działa i zastosowania"):
+        st.markdown(
+            "- Wpisujesz specyfikację — model w sekundę zwraca szacowaną cenę.\n"
+            "- Model jest wytrenowany na danych rynkowych (AutoML) i **można go dotrenować "
+            "na nowych danych bez zmian w kodzie** (wystarczy podmienić plik z danymi).\n"
+            "- Zastosowania: szybka wycena oferty, weryfikacja czy cena jest rynkowa, "
+            "wsparcie skupu i sprzedaży sprzętu używanego.\n"
+            "- Dostępne jako strona (ten interfejs) oraz jako API do integracji z innymi systemami."
+        )
+
+    with st.expander("📊 Informacje o modelu"):
         info = get_model_info()
         if info:
-            st.write({k: info[k] for k in ("mae", "rmse", "r2", "best_estimator") if k in info})
+            labels = {"r2": "Trafność (R²)", "mae": "Średni błąd (MAE)", "best_estimator": "Model"}
+            st.write({label: info[key] for key, label in labels.items() if key in info})
             if info.get("feature_importance"):
+                st.caption("Co najbardziej wpływa na cenę:")
                 st.bar_chart(info["feature_importance"])
         else:
-            st.warning("Model info unavailable.")
+            st.warning("Informacje o modelu są chwilowo niedostępne.")
 
 
 if __name__ == "__main__":
