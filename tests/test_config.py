@@ -8,7 +8,7 @@ from config import AppConfig, load_config
 def test_load_config_returns_appconfig():
     cfg = load_config()
     assert isinstance(cfg, AppConfig)
-    assert cfg.data.target == "Delivery_Time_min"
+    assert cfg.data.target == "Price"
     assert cfg.model.task == "regression"
 
 

@@ -1,30 +1,37 @@
 data:
-  raw_path: data/raw/Food_Delivery_Times.csv
+  raw_path: data/raw/laptop_data.csv
   synthetic:
     enabled: true
-    n_rows: 1000
+    n_rows: 1300
     seed: 42
-  target: Delivery_Time_min
+  target: Price
   numeric_features:
-    - Distance_km
-    - Preparation_Time_min
-    - Courier_Experience_yrs
+    - Ram
+    - Weight
+    - Inches
+    - ppi
+    - SSD
+    - HDD
+    - Touchscreen
+    - Ips
   categorical_features:
-    - Weather
-    - Traffic_Level
-    - Time_of_Day
-    - Vehicle_Type
+    - Company
+    - TypeName
+    - Cpu_brand
+    - Gpu_brand
+    - Os
   test_size: 0.2
   random_state: 42
 model:
   task: regression
   time_budget_s: 60
-  metric: mae
+  metric: r2
   estimator_list:
     - lgbm
     - rf
     - extra_tree
   ensemble: true
+  log_target: true
   artifact_dir: model/artifacts
   artifact_name: model.joblib
   metrics_name: metrics.json

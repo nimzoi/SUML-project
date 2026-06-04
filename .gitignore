@@ -220,7 +220,7 @@ __marimo__/
 # Project data & artifacts (track the canonical dataset, ignore everything else)
 data/raw/*
 !data/raw/.gitkeep
-!data/raw/Food_Delivery_Times.csv
+!data/raw/laptop_data.csv
 model/artifacts/*
 !model/artifacts/.gitkeep
 

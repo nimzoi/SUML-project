@@ -37,6 +37,7 @@ class ModelConfig(BaseModel):
     metric: str = "mae"
     estimator_list: List[str] = Field(default_factory=lambda: ["lgbm", "rf", "extra_tree"])
     ensemble: bool = True
+    log_target: bool = False
     artifact_dir: str = "model/artifacts"
     artifact_name: str = "model.joblib"
     metrics_name: str = "metrics.json"

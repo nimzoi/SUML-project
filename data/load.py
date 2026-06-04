@@ -9,6 +9,7 @@ import pandas as pd
 
 from config import AppConfig
 from data import synthetic
+from data.features import engineer_features
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ def load_data(config: AppConfig) -> pd.DataFrame:
     raw_path = Path(config.data.raw_path)
     if raw_path.exists():
         logger.info("Loading real dataset from %s", raw_path)
-        df = pd.read_csv(raw_path)
+        df = engineer_features(pd.read_csv(raw_path))
     elif config.data.synthetic.enabled:
         logger.info("Real CSV not found at %s; generating synthetic dataset", raw_path)
         df = synthetic.generate(config.data.synthetic.n_rows, config.data.synthetic.seed)
