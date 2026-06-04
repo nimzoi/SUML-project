@@ -2,36 +2,48 @@
 
 import joblib
 
-from app.inference import predict_minutes, to_feature_row
+from app.inference import predict_price, to_feature_row
 from config import load_config
 
 
 def _payload():
     return {
-        "distance_km": 7.9,
-        "weather": "Clear",
-        "traffic_level": "Medium",
-        "time_of_day": "Afternoon",
-        "vehicle_type": "Scooter",
-        "preparation_time_min": 12,
-        "courier_experience_yrs": 2.0,
+        "company": "Dell",
+        "type_name": "Notebook",
+        "inches": 15.6,
+        "ram_gb": 8,
+        "weight_kg": 1.6,
+        "touchscreen": 0,
+        "ips": 1,
+        "ppi": 141.2,
+        "cpu_brand": "Intel Core i5",
+        "ssd_gb": 256,
+        "hdd_gb": 0,
+        "gpu_brand": "Intel",
+        "os": "Windows",
     }
 
 
 def test_to_feature_row_shape_and_columns():
     row = to_feature_row(_payload())
-    assert row.shape == (1, 7)
+    assert row.shape == (1, 13)
     assert set(row.columns) == {
-        "Distance_km",
-        "Weather",
-        "Traffic_Level",
-        "Time_of_Day",
-        "Vehicle_Type",
-        "Preparation_Time_min",
-        "Courier_Experience_yrs",
+        "Company",
+        "TypeName",
+        "Inches",
+        "Ram",
+        "Weight",
+        "Touchscreen",
+        "Ips",
+        "ppi",
+        "Cpu_brand",
+        "SSD",
+        "HDD",
+        "Gpu_brand",
+        "Os",
     }
 
 
-def test_predict_minutes_positive(trained_model):
+def test_predict_price_positive(trained_model):
     model = joblib.load(trained_model.artifact_path)
-    assert predict_minutes(model, _payload()) > 0
+    assert predict_price(model, _payload()) > 0

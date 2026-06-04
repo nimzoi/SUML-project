@@ -6,15 +6,21 @@ from typing import Dict
 
 import pandas as pd
 
-# Map snake_case request fields to the model's original column names.
+# Map snake_case request fields to the model's engineered column names.
 REQUEST_TO_COLUMN = {
-    "distance_km": "Distance_km",
-    "weather": "Weather",
-    "traffic_level": "Traffic_Level",
-    "time_of_day": "Time_of_Day",
-    "vehicle_type": "Vehicle_Type",
-    "preparation_time_min": "Preparation_Time_min",
-    "courier_experience_yrs": "Courier_Experience_yrs",
+    "company": "Company",
+    "type_name": "TypeName",
+    "inches": "Inches",
+    "ram_gb": "Ram",
+    "weight_kg": "Weight",
+    "touchscreen": "Touchscreen",
+    "ips": "Ips",
+    "ppi": "ppi",
+    "cpu_brand": "Cpu_brand",
+    "ssd_gb": "SSD",
+    "hdd_gb": "HDD",
+    "gpu_brand": "Gpu_brand",
+    "os": "Os",
 }
 
 
@@ -27,6 +33,6 @@ def to_feature_row(payload: Dict) -> pd.DataFrame:
     return pd.DataFrame([row])
 
 
-def predict_minutes(model, payload: Dict) -> float:
-    """Predict delivery time (minutes) for one order, rounded to 1 decimal."""
-    return round(float(model.predict(to_feature_row(payload))[0]), 1)
+def predict_price(model, payload: Dict) -> float:
+    """Predict the laptop price for one configuration, rounded to 2 decimals."""
+    return round(float(model.predict(to_feature_row(payload))[0]), 2)

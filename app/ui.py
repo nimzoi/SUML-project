@@ -1,4 +1,4 @@
-"""Streamlit UI for the Food Delivery ETA service.
+"""Streamlit UI for the Laptop Price service.
 
 Two modes, same code: it calls the FastAPI service when reachable, otherwise it loads
 the model directly and predicts in-process. The standalone fallback lets the exact same
@@ -14,12 +14,20 @@ import joblib
 import requests
 import streamlit as st
 
-from app.inference import predict_minutes
+from app.inference import predict_price
+from app.schemas import Company, CpuBrand, GpuBrand, Os, TypeName
 from config import load_config
 from model.train import train
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 REQUEST_TIMEOUT = 10
+RESOLUTIONS = {
+    "1366 x 768": (1366, 768),
+    "1920 x 1080 (Full HD)": (1920, 1080),
+    "2560 x 1440": (2560, 1440),
+    "2560 x 1600": (2560, 1600),
+    "3840 x 2160 (4K)": (3840, 2160),
+}
 
 
 @st.cache_resource(show_spinner="Loading model...")
@@ -32,13 +40,13 @@ def _local_model():
 
 
 def get_prediction(payload: dict):
-    """Return (eta_minutes, source): try the API, fall back to the local model."""
+    """Return (price, source): try the API, fall back to the local model."""
     try:
         response = requests.post(f"{API_URL}/predict", json=payload, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-        return response.json()["eta_minutes"], "API"
+        return response.json()["price"], "API"
     except requests.RequestException:
-        return predict_minutes(_local_model(), payload), "model lokalny"
+        return predict_price(_local_model(), payload), "model lokalny"
 
 
 def get_model_info() -> dict:
@@ -53,33 +61,51 @@ def get_model_info() -> dict:
         return {}
 
 
-def main() -> None:
-    """Render the prediction form and show the result."""
-    st.set_page_config(page_title="Food Delivery ETA", page_icon="🛵")
-    st.title("🛵 Food Delivery ETA")
-    st.caption("Estimate delivery time from order and route features.")
+def main() -> None:  # pylint: disable=too-many-locals
+    """Render the laptop spec form and show the predicted price."""
+    st.set_page_config(page_title="Laptop Price", page_icon="💻")
+    st.title("💻 Laptop Price Predictor")
+    st.caption("Estimate a laptop's price from its specifications.")
 
-    distance = st.number_input("Distance (km)", min_value=0.0, value=7.9, step=0.1)
-    weather = st.selectbox("Weather", ["Clear", "Rainy", "Snowy", "Foggy", "Windy"])
-    traffic = st.selectbox("Traffic level", ["Low", "Medium", "High"])
-    time_of_day = st.selectbox("Time of day", ["Morning", "Afternoon", "Evening", "Night"])
-    vehicle = st.selectbox("Vehicle type", ["Bike", "Scooter", "Car"])
-    prep = st.number_input("Preparation time (min)", min_value=0, value=12, step=1)
-    experience = st.number_input("Courier experience (yrs)", min_value=0.0, value=2.0, step=0.5)
+    col1, col2 = st.columns(2)
+    with col1:
+        company = st.selectbox("Brand", [e.value for e in Company])
+        type_name = st.selectbox("Type", [e.value for e in TypeName])
+        cpu_brand = st.selectbox("CPU", [e.value for e in CpuBrand])
+        gpu_brand = st.selectbox("GPU", [e.value for e in GpuBrand])
+        operating_system = st.selectbox("Operating system", [e.value for e in Os])
+        inches = st.number_input("Screen size (inches)", min_value=10.0, max_value=20.0, value=15.6)
+    with col2:
+        ram_gb = st.selectbox("RAM (GB)", [4, 8, 12, 16, 24, 32, 64], index=1)
+        ssd_gb = st.selectbox("SSD (GB)", [0, 128, 256, 512, 1024], index=2)
+        hdd_gb = st.selectbox("HDD (GB)", [0, 500, 1000, 2000], index=0)
+        weight_kg = st.number_input("Weight (kg)", min_value=0.5, max_value=5.0, value=1.6)
+        resolution = st.selectbox("Resolution", list(RESOLUTIONS), index=1)
+        touchscreen = st.checkbox("Touchscreen")
+        ips = st.checkbox("IPS panel", value=True)
 
-    if st.button("Predict ETA"):
+    width, height = RESOLUTIONS[resolution]
+    ppi = round((width**2 + height**2) ** 0.5 / inches, 2)
+
+    if st.button("Predict price"):
         payload = {
-            "distance_km": distance,
-            "weather": weather,
-            "traffic_level": traffic,
-            "time_of_day": time_of_day,
-            "vehicle_type": vehicle,
-            "preparation_time_min": prep,
-            "courier_experience_yrs": experience,
+            "company": company,
+            "type_name": type_name,
+            "inches": inches,
+            "ram_gb": ram_gb,
+            "weight_kg": weight_kg,
+            "touchscreen": int(touchscreen),
+            "ips": int(ips),
+            "ppi": ppi,
+            "cpu_brand": cpu_brand,
+            "ssd_gb": ssd_gb,
+            "hdd_gb": hdd_gb,
+            "gpu_brand": gpu_brand,
+            "os": operating_system,
         }
         try:
-            eta, source = get_prediction(payload)
-            st.success(f"Estimated delivery time: {eta} min  ·  ({source})")
+            price, source = get_prediction(payload)
+            st.success(f"Estimated price: {price:,.0f}  ·  ({source})")
         except (requests.RequestException, ValueError, KeyError) as ex:
             st.error(f"Prediction failed: {ex}")
 

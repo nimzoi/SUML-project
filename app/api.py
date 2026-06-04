@@ -1,4 +1,4 @@
-"""FastAPI service exposing the delivery-time model."""
+"""FastAPI service exposing the laptop price model."""
 
 from __future__ import annotations
 
@@ -9,14 +9,14 @@ from typing import Dict
 import joblib
 from fastapi import FastAPI, HTTPException
 
-from app.inference import predict_minutes
+from app.inference import predict_price
 from app.schemas import HealthResponse, PredictRequest, PredictResponse
 from config import load_config
 
 logger = logging.getLogger(__name__)
 config = load_config()
 
-app = FastAPI(title="Food Delivery ETA API", version="1.0.0")
+app = FastAPI(title="Laptop Price API", version="1.0.0")
 
 _cache: Dict[str, object] = {}
 
@@ -37,12 +37,12 @@ def health() -> HealthResponse:
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest) -> PredictResponse:
-    """Predict delivery time (minutes) for a single order."""
+    """Predict the price for a single laptop configuration."""
     model = _load_model()
     if model is None:
         raise HTTPException(status_code=503, detail="Model not available. Train it first.")
-    eta = predict_minutes(model, request.model_dump(mode="json"))
-    return PredictResponse(eta_minutes=eta)
+    price = predict_price(model, request.model_dump(mode="json"))
+    return PredictResponse(price=price)
 
 
 @app.get("/model-info")
