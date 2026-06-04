@@ -7,9 +7,9 @@ import logging
 from typing import Dict
 
 import joblib
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 
+from app.inference import predict_minutes
 from app.schemas import HealthResponse, PredictRequest, PredictResponse
 from config import load_config
 
@@ -17,17 +17,6 @@ logger = logging.getLogger(__name__)
 config = load_config()
 
 app = FastAPI(title="Food Delivery ETA API", version="1.0.0")
-
-# Map snake_case request fields to the model's original column names.
-_REQUEST_TO_COLUMN = {
-    "distance_km": "Distance_km",
-    "weather": "Weather",
-    "traffic_level": "Traffic_Level",
-    "time_of_day": "Time_of_Day",
-    "vehicle_type": "Vehicle_Type",
-    "preparation_time_min": "Preparation_Time_min",
-    "courier_experience_yrs": "Courier_Experience_yrs",
-}
 
 _cache: Dict[str, object] = {}
 
@@ -52,16 +41,8 @@ def predict(request: PredictRequest) -> PredictResponse:
     model = _load_model()
     if model is None:
         raise HTTPException(status_code=503, detail="Model not available. Train it first.")
-    row = {
-        column: (
-            getattr(request, field).value
-            if hasattr(getattr(request, field), "value")
-            else getattr(request, field)
-        )
-        for field, column in _REQUEST_TO_COLUMN.items()
-    }
-    prediction = float(model.predict(pd.DataFrame([row]))[0])
-    return PredictResponse(eta_minutes=round(prediction, 1))
+    eta = predict_minutes(model, request.model_dump(mode="json"))
+    return PredictResponse(eta_minutes=eta)
 
 
 @app.get("/model-info")

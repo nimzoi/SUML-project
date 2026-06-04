@@ -1,18 +1,60 @@
-"""Streamlit UI for the Food Delivery ETA service."""
+"""Streamlit UI for the Food Delivery ETA service.
+
+Two modes, same code: it calls the FastAPI service when reachable, otherwise it loads
+the model directly and predicts in-process. The standalone fallback lets the exact same
+app run on Streamlit Community Cloud, where only the Streamlit process is hosted.
+"""
 
 from __future__ import annotations
 
+import json
 import os
 
+import joblib
 import requests
 import streamlit as st
+
+from app.inference import predict_minutes
+from config import load_config
+from model.train import train
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 REQUEST_TIMEOUT = 10
 
 
+@st.cache_resource(show_spinner="Loading model...")
+def _local_model():
+    """Load the model artifact, training it once if missing (standalone mode)."""
+    config = load_config()
+    if not config.artifact_path.exists():
+        train(config)
+    return joblib.load(config.artifact_path)
+
+
+def get_prediction(payload: dict):
+    """Return (eta_minutes, source): try the API, fall back to the local model."""
+    try:
+        response = requests.post(f"{API_URL}/predict", json=payload, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return response.json()["eta_minutes"], "API"
+    except requests.RequestException:
+        return predict_minutes(_local_model(), payload), "model lokalny"
+
+
+def get_model_info() -> dict:
+    """Return model metrics/metadata from the API, or the local metrics file."""
+    try:
+        return requests.get(f"{API_URL}/model-info", timeout=REQUEST_TIMEOUT).json()
+    except requests.RequestException:
+        path = load_config().metrics_path
+        if path.exists():
+            with path.open(encoding="utf-8") as handle:
+                return json.load(handle)
+        return {}
+
+
 def main() -> None:
-    """Render the prediction form and call the API."""
+    """Render the prediction form and show the result."""
     st.set_page_config(page_title="Food Delivery ETA", page_icon="🛵")
     st.title("🛵 Food Delivery ETA")
     st.caption("Estimate delivery time from order and route features.")
@@ -36,20 +78,19 @@ def main() -> None:
             "courier_experience_yrs": experience,
         }
         try:
-            response = requests.post(f"{API_URL}/predict", json=payload, timeout=REQUEST_TIMEOUT)
-            response.raise_for_status()
-            st.success(f"Estimated delivery time: {response.json()['eta_minutes']} min")
-        except requests.RequestException as ex:
+            eta, source = get_prediction(payload)
+            st.success(f"Estimated delivery time: {eta} min  ·  ({source})")
+        except (requests.RequestException, ValueError, KeyError) as ex:
             st.error(f"Prediction failed: {ex}")
 
     with st.expander("Model info & feature importance"):
-        try:
-            info = requests.get(f"{API_URL}/model-info", timeout=REQUEST_TIMEOUT).json()
+        info = get_model_info()
+        if info:
             st.write({k: info[k] for k in ("mae", "rmse", "r2", "best_estimator") if k in info})
             if info.get("feature_importance"):
                 st.bar_chart(info["feature_importance"])
-        except requests.RequestException as ex:
-            st.warning(f"Could not load model info: {ex}")
+        else:
+            st.warning("Model info unavailable.")
 
 
 if __name__ == "__main__":

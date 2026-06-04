@@ -25,7 +25,8 @@ Three independent packages, communicating through a saved artifact and HTTP:
 - **model/** — train via AutoML (FLAML), evaluate, and persist one artifact
   (`model.joblib`, a full scikit-learn `Pipeline`) plus `metrics.json`.
 - **app/** — FastAPI service that loads the artifact and serves `/predict`,
-  `/health`, `/model-info`; a Streamlit UI calls the API.
+  `/health`, `/model-info`; a Streamlit UI calls the API (with a standalone fallback
+  that loads the model directly when no API is reachable).
 
 Everything is driven by `config.yaml`, so swapping the dataset or retuning AutoML
 is a **config change, not a code change**.
@@ -146,6 +147,17 @@ make format   # black + isort
 ```
 
 CI (GitHub Actions) runs `pylint --fail-under=8` and `pytest` on every push and PR.
+
+## Deploy to Streamlit Cloud
+
+The Streamlit UI is **standalone-capable**: if no API is reachable it loads the model
+directly (training it once on first run, cached), so the same `app/ui.py` runs on
+[Streamlit Community Cloud](https://share.streamlit.io) with no separate API:
+
+1. Make sure the repo is public (or authorize Streamlit for a private repo).
+2. *New app* → repo `nimzoi/SUML-project`, branch `main`, main file `app/ui.py` → *Deploy*.
+3. Python 3.11+. Dependencies come from `requirements.txt`; `packages.txt` installs
+   `libgomp1` (needed by LightGBM). The model trains once on first load (~60s), then is cached.
 
 ## Docs
 
