@@ -1,5 +1,4 @@
 """Generate EDA plots for the data card. Run from the repo root: python docs/eda.py"""
-
 # isort: skip_file
 from __future__ import annotations
 
@@ -20,26 +19,28 @@ OUT = Path(__file__).resolve().parent / "img"
 
 
 def main() -> None:
-    """Save a target histogram and a distance-vs-time scatter."""
+    """Save a target histogram and a scatter of the top numeric feature vs target."""
     OUT.mkdir(parents=True, exist_ok=True)
     cfg = load_config()
     df = load_data(cfg)
+    target = cfg.data.target
+    feature = cfg.data.numeric_features[0]
 
     plt.figure()
-    df[cfg.data.target].hist(bins=30)
-    plt.xlabel("Delivery time (min)")
+    df[target].hist(bins=40)
+    plt.xlabel(target)
     plt.ylabel("Count")
-    plt.title("Delivery time distribution")
+    plt.title(f"{target} distribution")
     plt.tight_layout()
     plt.savefig(OUT / "target_hist.png")
 
     plt.figure()
-    plt.scatter(df["Distance_km"], df[cfg.data.target], s=8, alpha=0.4)
-    plt.xlabel("Distance (km)")
-    plt.ylabel("Delivery time (min)")
-    plt.title("Distance vs delivery time")
+    plt.scatter(df[feature], df[target], s=8, alpha=0.4)
+    plt.xlabel(feature)
+    plt.ylabel(target)
+    plt.title(f"{feature} vs {target}")
     plt.tight_layout()
-    plt.savefig(OUT / "distance_vs_time.png")
+    plt.savefig(OUT / "feature_scatter.png")
     print(f"Saved plots to {OUT}")
 
 

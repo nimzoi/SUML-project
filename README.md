@@ -1,63 +1,62 @@
-# Food Delivery ETA — Delivery Time Prediction
+# Laptop Price Prediction
 
-Predicts estimated delivery time (in minutes) for food-delivery orders from
-order / route / context features. Trained with **AutoML (FLAML)**, served as a
-**FastAPI** REST API with a **Streamlit** UI, and fully **containerized** with
-Docker Compose. Clean `data | model | app` separation, driven by a single
-`config.yaml`.
+Predicts a laptop's price (INR) from its specifications. Trained with **AutoML (FLAML)**,
+served as a **FastAPI** REST API with a **Streamlit** UI, and fully **containerized** with
+Docker Compose. Clean `data | model | app` separation, driven by a single `config.yaml`.
 
 > Course: Środowiska uruchomieniowe ML (SUML), PJATK — group project.
 
 ## Business context
 
-Delivery platforms (Wolt / Glovo / Uber Eats style) need an accurate ETA at order
-time to set customer expectations, dispatch couriers, and flag orders at risk of
-being late. This project trains a regression model that estimates delivery time
-from distance, weather, traffic, preparation time, and courier experience, and
-exposes it through a `/predict` endpoint. Baseline: **MAE ≈ 6.1 min, R² ≈ 0.82**.
+Pricing a laptop correctly matters for retailers, marketplaces and trade-in / valuation
+tools: too high and it won't sell, too low and you lose margin. This project trains a
+regression model that estimates price from brand, type, RAM, storage, screen, CPU/GPU and
+OS, and exposes it through a `/predict` endpoint. Baseline: **R² ≈ 0.85** (original price
+scale), MAE ≈ 9 600 INR.
 
 ## Architecture
 
 Three independent packages, communicating through a saved artifact and HTTP:
 
-- **data/** — load the real CSV (or generate synthetic data with the same schema),
-  validate it, split, and build the preprocessing transformer.
-- **model/** — train via AutoML (FLAML), evaluate, and persist one artifact
-  (`model.joblib`, a full scikit-learn `Pipeline`) plus `metrics.json`.
-- **app/** — FastAPI service that loads the artifact and serves `/predict`,
-  `/health`, `/model-info`; a Streamlit UI calls the API (with a standalone fallback
-  that loads the model directly when no API is reachable).
+- **data/** — load the raw CSV and **engineer + clean** it (`features.py`: parse "8GB"→8,
+  "1.37kg"→1.37, screen resolution→PPI/touch/IPS, CPU/memory/GPU→brand & capacities), or
+  generate synthetic data with the same engineered schema; then split + preprocess.
+- **model/** — train via AutoML (FLAML, stacked ensemble, log-target) and persist one
+  scikit-learn `Pipeline` (`model.joblib`) plus `metrics.json`.
+- **app/** — FastAPI service serving `/predict`, `/health`, `/model-info`; a Streamlit UI
+  calls the API (with a standalone fallback that loads the model directly when no API is
+  reachable).
 
-Everything is driven by `config.yaml`, so swapping the dataset or retuning AutoML
-is a **config change, not a code change**.
+Everything is driven by `config.yaml`, so swapping the dataset or retuning AutoML is a
+**config change, not a code change**.
 
 ## Repo structure
 
 ```
 SUML-project/
 ├── config.yaml              # single source of truth: data + model + serving
-├── requirements.txt         # pinned runtime deps (installed in the image)
+├── requirements.txt         # pinned runtime deps
 ├── requirements-dev.txt     # + pytest, pylint, black, isort, httpx, matplotlib
 ├── Dockerfile               # slim, non-root, trains the model at build time
 ├── docker-compose.yml       # services: api (FastAPI) + ui (Streamlit)
-├── Makefile                 # train / api / ui / test / lint / format / docker
-├── .pylintrc                # tuned to keep pylint >= 8
+├── Makefile · pyproject.toml · .pylintrc · packages.txt
 ├── .github/workflows/ci.yml # CI: pylint (>= 8) + pytest
 ├── config.py                # typed, validated config loader (Pydantic)
 ├── data/
-│   ├── raw/Food_Delivery_Times.csv   # dataset (tracked)
+│   ├── raw/laptop_data.csv  # dataset (tracked)
+│   ├── features.py          # raw -> engineered features + cleaning
 │   ├── synthetic.py         # deterministic synthetic generator (same schema)
-│   ├── load.py              # load real CSV or synthetic + validate schema
+│   ├── load.py              # load real CSV (+ engineer) or synthetic + validate
 │   └── prepare.py           # split + ColumnTransformer (impute + one-hot)
 ├── model/
-│   ├── train.py             # FLAML fit -> model.joblib + metrics.json
-│   ├── evaluate.py          # MAE / RMSE / R2
-│   └── artifacts/           # model.joblib + metrics.json (git-ignored)
+│   ├── train.py             # FLAML + log-target -> model.joblib + metrics.json
+│   └── evaluate.py          # MAE / RMSE / R2
 ├── app/
 │   ├── schemas.py           # Pydantic request/response models
+│   ├── inference.py         # shared payload -> prediction helper (API + UI)
 │   ├── api.py               # FastAPI: /predict, /health, /model-info
-│   └── ui.py                # Streamlit front, calls the API
-├── tests/                   # pytest: data, model, schemas, api, ui
+│   └── ui.py                # Streamlit front (API or standalone)
+├── tests/                   # pytest: data, model, schemas, inference, api, ui
 └── docs/                    # data card, EDA, design spec, plan
 ```
 
@@ -80,10 +79,8 @@ docker compose up --build
 - API: http://localhost:8000 — interactive docs at `/docs`
 - UI:  http://localhost:8501
 
-The dataset is committed and the model is trained during the image build, so this
-runs end-to-end on real data with no manual steps.
-
-![Streamlit UI](docs/img/ui.png)
+The dataset is committed and the model is trained during the image build, so this runs
+end-to-end on real data with no manual steps.
 
 ## Run natively (without Docker)
 
@@ -100,43 +97,44 @@ On Windows without `make`, use the explicit commands shown after each target.
 
 Single source of truth, validated on load. Key sections:
 
-- `data` — dataset path, synthetic-generation toggle + size + seed, target,
-  numeric/categorical feature lists, test split.
-- `model` — AutoML task, `time_budget_s`, metric, `estimator_list`
-  (`lgbm`, `rf`, `extra_tree`), `ensemble` (stacking), artifact paths, seed. **This is the AutoML config.**
+- `data` — dataset path, synthetic toggle + size + seed, target, numeric/categorical
+  feature lists, test split.
+- `model` — AutoML task, `time_budget_s`, metric, `estimator_list`, `ensemble` (stacking),
+  `log_target` (train on log-price, predict real price), artifact paths, seed.
+  **This is the AutoML config.**
 - `api` / `ui` — host/port and the API URL the UI calls.
 
 ## Data
 
-- Source: Kaggle `denkuznetz/food-delivery-time-prediction`, committed at
-  `data/raw/Food_Delivery_Times.csv` (1000 × 9).
-- If the CSV is absent, a deterministic synthetic dataset with the same schema is
-  generated automatically. See [docs/data_card.md](docs/data_card.md).
+- Source: Kaggle laptop price dataset, committed at `data/raw/laptop_data.csv` (1303 raw
+  rows). The raw strings are cleaned and feature-engineered in `data/features.py`.
+- If the CSV is absent, a deterministic synthetic dataset with the same engineered schema
+  is generated automatically. See [docs/data_card.md](docs/data_card.md).
 
 ## Retraining
 
-Drop a new CSV with the same schema into `data/raw/` and run `python -m model.train`.
-The loader validates the schema, and `model.joblib` + `metrics.json` are rebuilt — no
-code changes. The app picks up the new artifact on restart.
+Drop a new raw CSV (same columns) into `data/raw/` and run `python -m model.train`. The
+loader engineers + validates it, and `model.joblib` + `metrics.json` are rebuilt — no code
+changes. The app picks up the new artifact on restart.
 
 ## API
 
 `POST /predict`
 
 ```json
-{ "distance_km": 7.9, "weather": "Clear", "traffic_level": "Medium",
-  "time_of_day": "Afternoon", "vehicle_type": "Scooter",
-  "preparation_time_min": 12, "courier_experience_yrs": 2.0 }
+{ "company": "Dell", "type_name": "Notebook", "inches": 15.6, "ram_gb": 8,
+  "weight_kg": 1.6, "touchscreen": 0, "ips": 1, "ppi": 141.2,
+  "cpu_brand": "Intel Core i5", "ssd_gb": 256, "hdd_gb": 0,
+  "gpu_brand": "Intel", "os": "Windows" }
 ```
 
-→ `{ "eta_minutes": 44.6 }`  *(example value)*
+→ `{ "price": 55000.0 }`  *(example value, INR)*
 
 - `GET /health` → `{ "status": "ok", "model_loaded": true }`
-- `GET /model-info` → metrics + metadata (best estimator, training date, data source,
-  feature importance)
+- `GET /model-info` → metrics + metadata (best estimator, training date, feature importance)
 
-Invalid input is rejected with HTTP 422 (validated by Pydantic); requests before a
-model is trained return HTTP 503.
+Invalid input is rejected with HTTP 422 (validated by Pydantic); requests before a model
+is trained return HTTP 503.
 
 ## Testing & quality
 
@@ -161,7 +159,7 @@ directly (training it once on first run, cached), so the same `app/ui.py` runs o
 
 ## Docs
 
-- Design spec: [docs/superpowers/specs/2026-06-04-food-delivery-eta-design.md](docs/superpowers/specs/2026-06-04-food-delivery-eta-design.md)
-- Implementation plan: [docs/superpowers/plans/2026-06-04-food-delivery-eta.md](docs/superpowers/plans/2026-06-04-food-delivery-eta.md)
 - Data card: [docs/data_card.md](docs/data_card.md)
+- Original design spec & plan (the project started as a Food Delivery ETA build, then
+  pivoted to laptops): [docs/superpowers/](docs/superpowers/)
 ```

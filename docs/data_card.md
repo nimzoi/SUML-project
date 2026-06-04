@@ -1,41 +1,42 @@
-# Data Card — Food Delivery Times
+# Data Card — Laptop Prices
 
 ## Source
-- Kaggle: `denkuznetz/food-delivery-time-prediction`
-- File: `data/raw/Food_Delivery_Times.csv` (committed to the repo for one-command reproducibility)
-- 1000 rows × 9 columns; regression target = delivery time in minutes.
+- Kaggle laptop price dataset (campusx mirror), saved at `data/raw/laptop_data.csv`.
+- 1303 raw rows × 12 columns; target = **Price** (currency: INR, as in the dataset).
+- Committed to the repo for one-command reproducibility.
 
-When the CSV is absent, `data/synthetic.py` deterministically generates a dataset with the
-**same schema** (and ~3% injected nulls), so the pipeline runs anywhere without a manual download.
+When the CSV is absent, `data/synthetic.py` deterministically generates data with the
+**same engineered schema** (seeded), so the pipeline runs anywhere.
 
-## Schema
+## Raw → engineered (the cleaning / feature-engineering layer)
+The raw data stores several fields as messy strings. `data/features.py` parses them:
 
-| Column | Type | Role | Notes |
-|--------|------|------|-------|
-| Order_ID | int | id | dropped before training |
-| Distance_km | float | numeric feature | ~0.5–20 |
-| Weather | categorical | feature | Clear / Rainy / Snowy / Foggy / Windy |
-| Traffic_Level | categorical | feature | Low / Medium / High |
-| Time_of_Day | categorical | feature | Morning / Afternoon / Evening / Night |
-| Vehicle_Type | categorical | feature | Bike / Scooter / Car |
-| Preparation_Time_min | int | numeric feature | |
-| Courier_Experience_yrs | float | numeric feature | |
-| Delivery_Time_min | int | **target** | min 8, mean ≈ 57, max 153 |
+| Raw field | Engineered feature(s) |
+|-----------|-----------------------|
+| `Ram` = "8GB" | `Ram` (int) |
+| `Weight` = "1.37kg" | `Weight` (float) |
+| `ScreenResolution` = "IPS Panel … 1920x1080" | `Touchscreen` (0/1), `Ips` (0/1), `ppi` (float) |
+| `Cpu` = "Intel Core i5 7200U 2.5GHz" | `Cpu_brand` (i3/i5/i7/Other Intel/AMD) |
+| `Memory` = "256GB SSD + 1TB HDD" | `SSD` (GB), `HDD` (GB) |
+| `Gpu` = "Nvidia GeForce MX150" | `Gpu_brand` (Intel/Nvidia/AMD) |
+| `OpSys` | `Os` (Windows/Mac/Other) |
 
-## Missing values
-The real data contains **30 nulls each** in `Weather`, `Traffic_Level`, `Time_of_Day`, and
-`Courier_Experience_yrs`. They are imputed in `data/prepare.py` (most-frequent for
-categoricals, median for numerics) inside the model pipeline, so training and serving handle
-them identically.
+It also drops the index column and **drops rows with invalid/missing engineered values**
+(physically impossible or unparseable) — real data cleaning.
+
+## Engineered schema (target = `Price`)
+- **Numeric:** `Ram`, `Weight`, `Inches`, `ppi`, `SSD`, `HDD`, `Touchscreen`, `Ips`
+- **Categorical:** `Company`, `TypeName`, `Cpu_brand`, `Gpu_brand`, `Os`
 
 ## Target distribution
-![Delivery time distribution](img/target_hist.png)
+![Price distribution](img/target_hist.png)
 
-## Distance vs delivery time
-![Distance vs delivery time](img/distance_vs_time.png)
+## Top numeric feature vs price
+![RAM vs price](img/feature_scatter.png)
 
 ## Baseline model
-FLAML AutoML with a stacked ensemble (base estimator: **LightGBM**) on a 20% holdout:
-**MAE ≈ 6.1 min · RMSE ≈ 9.0 · R² ≈ 0.82.** Top features (permutation importance): distance,
-preparation time, traffic, weather. Live values are written to `model/artifacts/metrics.json` after
-training and served at `GET /model-info`.
+FLAML AutoML (stacked ensemble) with a **log-target** on a 20% holdout:
+**MAE ≈ 9 600 · RMSE ≈ 14 600 · R² ≈ 0.85** on the original price scale
+(≈ 0.88 measured on log-price). Top features (permutation importance): RAM, SSD, laptop
+type, CPU tier. Live values are written to `model/artifacts/metrics.json` and served at
+`GET /model-info`.

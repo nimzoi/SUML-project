@@ -105,7 +105,7 @@ def card(s, left, top, width, height, big, label):
     p.alignment = PP_ALIGN.CENTER
     r = p.add_run()
     r.text = big
-    r.font.size = Pt(40)
+    r.font.size = Pt(38)
     r.font.bold = True
     r.font.name = HEAD
     r.font.color.rgb = TEAL
@@ -144,17 +144,23 @@ def panel(s, left, top, width, height, header, lines):
         run.font.color.rgb = DARK
 
 
+def picture(s, name, left, top, width):
+    path = IMG / name
+    if path.exists():
+        s.shapes.add_picture(str(path), Inches(left), Inches(top), width=Inches(width))
+
+
 # --- Slide 1: title (dark) ---
 s = slide(NAVY, motif=False)
 rrect(s, 0, 0, 0.32, 7.5, TEAL)
-text(s, 0.9, 2.3, 11.5, 1.4, "Food Delivery ETA", size=54, color=WHITE, bold=True, font=HEAD)
+text(s, 0.9, 2.3, 11.5, 1.4, "Laptop Price Predictor", size=52, color=WHITE, bold=True, font=HEAD)
 text(
     s,
     0.9,
     3.7,
     11.5,
     0.9,
-    "Predykcja czasu dostawy jedzenia — AutoML, FastAPI, Streamlit, Docker",
+    "Predykcja ceny laptopa ze specyfikacji — AutoML, FastAPI, Streamlit, Docker",
     size=22,
     color=ICE,
     font=BODY,
@@ -183,21 +189,19 @@ text(
     6.6,
     4.6,
     [
-        "Platformy dostaw (Wolt, Glovo, Uber Eats) potrzebują trafnego ETA już w momencie zamówienia.",
-        "Dobre ETA = realne oczekiwania klienta, sprawniejsza dyspozycja kurierów i wczesne flagowanie opóźnień.",
-        "Aplikacja przewiduje czas dostawy (regresja) na podstawie cech zamówienia, trasy i kontekstu.",
+        "Wycena laptopa wprost wpływa na sprzedaż i marżę (sklepy, marketplace, wycena używanego sprzętu).",
+        "Za drogo — nie sprzeda się; za tanio — tracimy marżę.",
+        "Aplikacja przewiduje cenę (regresja) z marki, typu, RAM, dysku, ekranu, CPU/GPU i systemu.",
     ],
     size=17,
     bullet=True,
     space=14,
 )
-s_img = IMG / "distance_vs_time.png"
-if s_img.exists():
-    s.shapes.add_picture(str(s_img), Inches(7.6), Inches(2.1), width=Inches(5.2))
+picture(s, "feature_scatter.png", 7.7, 2.1, 5.0)
 
 # --- Slide 3: data ---
 s = slide()
-title(s, "Dane")
+title(s, "Dane i czyszczenie")
 text(
     s,
     0.7,
@@ -205,29 +209,26 @@ text(
     6.6,
     4.6,
     [
-        "Źródło: Kaggle denkuznetz/food-delivery-time-prediction (1000 wierszy, 9 kolumn).",
-        "CSV dołączony do repo + generator danych syntetycznych o tym samym schemacie (fallback).",
-        "Braki: po 30 w 4 kolumnach → imputacja w pipeline (mediana / najczęstsza wartość).",
-        "Cel: czas dostawy 8–153 min (średnio ~57).",
+        "Źródło: Kaggle laptop price (1303 wiersze) — dołączony do repo.",
+        'Surowe pola to teksty: RAM "8GB", waga "1.37kg", rozdzielczość/CPU/pamięć.',
+        "features.py: parsowanie → RAM, waga, PPI, touch/IPS, SSD/HDD, marki CPU/GPU; + czyszczenie złych wierszy.",
+        "Brak CSV → generator syntetyczny o tym samym schemacie (fallback).",
     ],
     size=16,
     bullet=True,
     space=12,
 )
-t_img = IMG / "target_hist.png"
-if t_img.exists():
-    s.shapes.add_picture(str(t_img), Inches(7.7), Inches(2.2), width=Inches(5.0))
+picture(s, "target_hist.png", 7.8, 2.2, 4.9)
 
 # --- Slide 4: architecture ---
 s = slide()
 title(s, "Architektura: data | model | app")
 boxes = [
-    ("data", "load + walidacja\nsplit + preprocessing"),
-    ("model", "FLAML AutoML\nmodel.joblib + metrics.json"),
+    ("data", "load + feature engineering\nczyszczenie + split"),
+    ("model", "FLAML AutoML + log-target\nmodel.joblib + metrics.json"),
     ("app", "FastAPI /predict\nStreamlit UI"),
 ]
-xs = [0.9, 4.9, 8.9]
-for (name, desc), x in zip(boxes, xs):
+for (name, desc), x in zip(boxes, [0.9, 4.9, 8.9]):
     b = rrect(s, x, 2.6, 3.5, 2.0, ICE)
     tf = b.text_frame
     tf.word_wrap = True
@@ -245,7 +246,7 @@ for (name, desc), x in zip(boxes, xs):
         pp.alignment = PP_ALIGN.CENTER
         r3 = pp.add_run()
         r3.text = ln
-        r3.font.size = Pt(13)
+        r3.font.size = Pt(12)
         r3.font.name = BODY
         r3.font.color.rgb = DARK
 for ax in (4.45, 8.45):
@@ -257,17 +258,15 @@ for ax in (4.45, 8.45):
     arr.line.fill.background()
     arr.shadow.inherit = False
 banner = rrect(s, 0.9, 5.1, 11.5, 1.0, NAVY)
-tf = banner.text_frame
-tf.word_wrap = True
-tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-tf.margin_left = Pt(16)
-p = tf.paragraphs[0]
-r = p.add_run()
-r.text = "Wszystko sterowane przez config.yaml — zmiana datasetu lub retuning to zmiana configu, nie kodu."
-r.font.size = Pt(16)
-r.font.bold = True
-r.font.name = BODY
-r.font.color.rgb = WHITE
+banner.text_frame.word_wrap = True
+banner.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+banner.text_frame.margin_left = Pt(16)
+br = banner.text_frame.paragraphs[0].add_run()
+br.text = "Wszystko sterowane przez config.yaml — zmiana datasetu lub retuning to zmiana configu, nie kodu."
+br.font.size = Pt(16)
+br.font.bold = True
+br.font.name = BODY
+br.font.color.rgb = WHITE
 
 # --- Slide 5: AutoML ---
 s = slide()
@@ -279,32 +278,30 @@ text(
     6.6,
     4.6,
     [
-        "AutoML.fit przeszukuje estymatory (lgbm, rf, extra_tree) i składa je w ensemble (stacking).",
-        "Cały preprocessing + model zapisany jako jeden sklearn Pipeline (model.joblib).",
-        "Imputacja + one-hot w pipeline → spójność trening / serwowanie, bez wycieków.",
-        "Konfiguracja AutoML w config.yaml (budżet, metryka, lista estymatorów).",
+        "AutoML.fit przeszukuje estymatory (lgbm, rf, extra_tree) i składa je w ensemble.",
+        "log-target: trenujemy na log(cena), przewidujemy realną cenę (uczciwe R2 w walucie).",
+        "Cały preprocessing + model w jednym sklearn Pipeline (model.joblib).",
+        "Ważność cech liczona permutacyjnie (model-agnostic).",
     ],
     size=16,
     bullet=True,
     space=12,
 )
-f_img = IMG / "feat_importance.png"
-if f_img.exists():
-    s.shapes.add_picture(str(f_img), Inches(7.6), Inches(2.2), width=Inches(5.2))
+picture(s, "feat_importance.png", 7.6, 2.2, 5.2)
 
 # --- Slide 6: results ---
 s = slide()
 title(s, "Wyniki modelu")
-card(s, 0.9, 2.5, 3.6, 2.2, "6,1", "MAE (minuty)")
-card(s, 4.85, 2.5, 3.6, 2.2, "9,0", "RMSE")
-card(s, 8.8, 2.5, 3.6, 2.2, "0,82", "R²")
+card(s, 0.9, 2.5, 3.6, 2.2, "0,85", "R² (cena, INR)")
+card(s, 4.85, 2.5, 3.6, 2.2, "9,6k", "MAE (INR)")
+card(s, 8.8, 2.5, 3.6, 2.2, "14,6k", "RMSE (INR)")
 text(
     s,
     0.9,
     5.1,
     11.5,
     0.8,
-    "Model: FLAML ensemble (baza LightGBM) · ocena na 20% holdout · najważniejsza cecha: dystans.",
+    "FLAML ensemble + log-target · 20% holdout · najważniejsze cechy: RAM, SSD, typ, CPU.",
     size=16,
     color=MUTED,
     align=PP_ALIGN.CENTER,
@@ -321,11 +318,11 @@ panel(
     4.2,
     "FastAPI (usługa)",
     [
-        "POST /predict — predykcja ETA (minuty)",
+        "POST /predict — przewidywana cena",
         "GET /health — status + czy model wczytany",
         "GET /model-info — metryki i metadane",
         "Interaktywne /docs (OpenAPI) za darmo",
-        "Walidacja wejścia Pydantic → 422 dla błędnych danych",
+        "Walidacja wejścia Pydantic → 422",
     ],
 )
 panel(
@@ -336,11 +333,10 @@ panel(
     4.2,
     "Streamlit (UI)",
     [
-        "Formularz cech zamówienia",
-        "Woła API i pokazuje przewidziany czas",
-        "Panel z metrykami modelu",
-        "Wykres ważności cech",
-        "Konfigurowalny adres API (env / config)",
+        "Formularz specyfikacji laptopa",
+        "Woła API i pokazuje cenę",
+        "Tryb standalone (model lokalnie) na Streamlit Cloud",
+        "Panel z metrykami + ważność cech",
     ],
 )
 
@@ -354,10 +350,10 @@ text(
     7.2,
     4.6,
     [
-        "docker compose up --build → dwa serwisy: api (FastAPI) + ui (Streamlit).",
-        "Model trenowany podczas budowania obrazu — gotowy przy pierwszym żądaniu.",
-        "Zależności przypięte (requirements.txt); obraz python:3.11-slim, użytkownik non-root.",
-        "Zero konfiguracji systemu operacyjnego; .gitattributes wymusza końce linii LF.",
+        "docker compose up --build → dwa serwisy: api + ui.",
+        "Model trenowany podczas budowania obrazu — gotowy od razu.",
+        "Zależności przypięte; obraz python:3.11-slim, użytkownik non-root.",
+        "packages.txt (libgomp1 dla LightGBM); .gitattributes wymusza LF.",
         "config.yaml jako jedno źródło prawdy.",
     ],
     size=16,
@@ -365,25 +361,24 @@ text(
     space=11,
 )
 banner = rrect(s, 8.3, 2.4, 4.2, 2.4, TEAL)
-tf = banner.text_frame
-tf.word_wrap = True
-tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-tf.margin_left = Pt(14)
-tf.margin_right = Pt(14)
-p = tf.paragraphs[0]
-p.alignment = PP_ALIGN.CENTER
-r = p.add_run()
-r.text = "Jedna komenda\nuruchamia całość"
-r.font.size = Pt(24)
-r.font.bold = True
-r.font.name = HEAD
-r.font.color.rgb = WHITE
+banner.text_frame.word_wrap = True
+banner.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+banner.text_frame.margin_left = Pt(14)
+banner.text_frame.margin_right = Pt(14)
+bp = banner.text_frame.paragraphs[0]
+bp.alignment = PP_ALIGN.CENTER
+brun = bp.add_run()
+brun.text = "Jedna komenda\nuruchamia całość"
+brun.font.size = Pt(24)
+brun.font.bold = True
+brun.font.name = HEAD
+brun.font.color.rgb = WHITE
 
 # --- Slide 9: quality ---
 s = slide()
 title(s, "Jakość kodu i organizacja")
 card(s, 0.9, 2.4, 3.6, 2.0, "10/10", "pylint")
-card(s, 4.85, 2.4, 3.6, 2.0, "26", "testów (pytest)")
+card(s, 4.85, 2.4, 3.6, 2.0, "28", "testów (pytest)")
 card(s, 8.8, 2.4, 3.6, 2.0, "CI", "GitHub Actions")
 text(
     s,
@@ -393,8 +388,8 @@ text(
     1.8,
     [
         "PEP8 + black + isort, type hints i docstringi w całym kodzie.",
-        "Ścisły podział data | model | app; modularność na poziomie funkcji i katalogów.",
-        "Czytelna historia commitów; spec i plan w docs/.",
+        "Ścisły podział data | model | app; modularność funkcji i katalogów.",
+        "Czysta historia commitów; data card + EDA w docs/.",
     ],
     size=16,
     bullet=True,
@@ -412,7 +407,7 @@ text(
     11.4,
     4.0,
     [
-        "Demo: docker compose up --build → UI :8501, API :8000/docs → predykcja na żywo.",
+        "Demo: docker compose up --build → UI :8501, API :8000/docs → wycena na żywo.",
         "Retraining: nowy CSV w data/raw/ + python -m model.train (bez zmian w kodzie).",
         "Repo: github.com/nimzoi/SUML-project",
     ],
