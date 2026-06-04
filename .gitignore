@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project data & artifacts (track the canonical dataset, ignore everything else)
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/Food_Delivery_Times.csv
+model/artifacts/*
+!model/artifacts/.gitkeep
