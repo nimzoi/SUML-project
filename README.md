@@ -126,7 +126,7 @@ code changes. The app picks up the new artifact on restart.
   "preparation_time_min": 12, "courier_experience_yrs": 2.0 }
 ```
 
-→ `{ "eta_minutes": 43.1 }`  *(example value)*
+→ `{ "eta_minutes": 44.9 }`  *(example value)*
 
 - `GET /health` → `{ "status": "ok", "model_loaded": true }`
 - `GET /model-info` → metrics + metadata (best estimator, training date, data source,
