@@ -157,7 +157,9 @@ not code edit.
 - **Portability:** `Dockerfile` (python:3.11-slim, copy requirements first for layer
   caching, non-root user, `HEALTHCHECK`), `.dockerignore`, `docker-compose.yml`
   (api + ui), `Makefile` with `train/api/ui/test/lint/format/docker` + documented
-  `python -m ...` fallbacks (cross-platform).
+  `python -m ...` fallbacks (cross-platform). The canonical dataset
+  `data/raw/Food_Delivery_Times.csv` is tracked in git so clone → run works on real data;
+  `.gitignore` excludes any other `data/raw/*` and `model/artifacts/*`.
 - **Ops/retraining:** `metrics.json` + model metadata, `/model-info` endpoint, Python
   `logging` (no prints), config validation.
 - **Presentation aids:** `data_card.md` (dataset description + a few EDA plots) and
@@ -191,5 +193,3 @@ no xgboost/catboost. Single dataset, single model artifact.
 
 - Group index numbers (for the proposal).
 - Language for the slides (assume Polish unless told otherwise).
-- Whether to commit `data/raw/Food_Delivery_Times.csv` to git (reproducibility) or
-  git-ignore it (convention). Decision pending.
