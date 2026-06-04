@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Dict
 
 import joblib
+import numpy as np
 from flaml import AutoML
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
 
@@ -27,7 +29,13 @@ def train(config: AppConfig) -> Dict:
     data_source = "real" if Path(config.data.raw_path).exists() else "synthetic"
     x_train, x_test, y_train, y_test = split_data(df, config)
 
-    pipeline = Pipeline(steps=[("prep", build_preprocessor(config)), ("model", AutoML())])
+    model_step = AutoML()
+    if config.model.log_target:
+        # Train on log(price) but predict on the original scale (honest R2 in real units).
+        model_step = TransformedTargetRegressor(
+            regressor=AutoML(), func=np.log1p, inverse_func=np.expm1
+        )
+    pipeline = Pipeline(steps=[("prep", build_preprocessor(config)), ("model", model_step)])
     pipeline.fit(
         x_train,
         y_train,
@@ -41,9 +49,11 @@ def train(config: AppConfig) -> Dict:
     )
 
     metrics = regression_metrics(y_test, pipeline.predict(x_test))
+    fitted_model = pipeline.named_steps["model"]
+    automl = getattr(fitted_model, "regressor_", fitted_model)
     report = {
         **metrics,
-        "best_estimator": pipeline.named_steps["model"].best_estimator,
+        "best_estimator": automl.best_estimator,
         "training_date": datetime.now(timezone.utc).isoformat(),
         "n_rows": int(len(df)),
         "data_source": data_source,

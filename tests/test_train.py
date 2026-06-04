@@ -20,6 +20,7 @@ def test_train_creates_artifact_and_metrics(tmp_path):
     assert cfg.artifact_path.exists()
     assert cfg.metrics_path.exists()
     assert report["mae"] >= 0
+    assert report["r2"] <= 1.0
     assert report["data_source"] in {"real", "synthetic"}
     assert "best_estimator" in report
 
@@ -31,13 +32,19 @@ def test_saved_pipeline_predicts(tmp_path):
     row = pd.DataFrame(
         [
             {
-                "Distance_km": 7.9,
-                "Preparation_Time_min": 12,
-                "Courier_Experience_yrs": 2.0,
-                "Weather": "Clear",
-                "Traffic_Level": "Medium",
-                "Time_of_Day": "Afternoon",
-                "Vehicle_Type": "Scooter",
+                "Ram": 8,
+                "Weight": 1.5,
+                "Inches": 15.6,
+                "ppi": 141.0,
+                "SSD": 256,
+                "HDD": 0,
+                "Touchscreen": 0,
+                "Ips": 1,
+                "Company": "Dell",
+                "TypeName": "Notebook",
+                "Cpu_brand": "Intel Core i5",
+                "Gpu_brand": "Intel",
+                "Os": "Windows",
             }
         ]
     )
