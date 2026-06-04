@@ -24,6 +24,7 @@ model:
     - lgbm
     - rf
     - extra_tree
+  ensemble: true
   artifact_dir: model/artifacts
   artifact_name: model.joblib
   metrics_name: metrics.json

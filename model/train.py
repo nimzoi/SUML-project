@@ -10,6 +10,7 @@ from typing import Dict
 
 import joblib
 from flaml import AutoML
+from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
 
 from config import AppConfig, load_config
@@ -34,6 +35,7 @@ def train(config: AppConfig) -> Dict:
         model__time_budget=config.model.time_budget_s,
         model__metric=config.model.metric,
         model__estimator_list=config.model.estimator_list,
+        model__ensemble=config.model.ensemble,
         model__seed=config.model.seed,
         model__verbose=0,
     )
@@ -47,7 +49,7 @@ def train(config: AppConfig) -> Dict:
         "data_source": data_source,
         "feature_columns": config.feature_columns,
         "target": config.data.target,
-        "feature_importance": _feature_importance(pipeline),
+        "feature_importance": _feature_importance(pipeline, x_test, y_test, config.model.seed),
     }
 
     Path(config.model.artifact_dir).mkdir(parents=True, exist_ok=True)
@@ -58,17 +60,25 @@ def train(config: AppConfig) -> Dict:
     return report
 
 
-def _feature_importance(pipeline: Pipeline, top_n: int = 15) -> Dict[str, float]:
-    """Best-effort feature importance keyed by transformed feature name."""
+def _feature_importance(
+    pipeline: Pipeline, x_test, y_test, seed: int, top_n: int = 15
+) -> Dict[str, float]:
+    """Model-agnostic permutation importance keyed by input feature.
+
+    Works for any estimator (including stacked ensembles that lack
+    feature_importances_): measures the drop in R2 when each input column is shuffled.
+    """
     try:
-        names = pipeline.named_steps["prep"].get_feature_names_out()
-        estimator = pipeline.named_steps["model"].model.estimator
-        importances = getattr(estimator, "feature_importances_", None)
-        if importances is None:
-            return {}
-        ranked = sorted(zip(names, importances), key=lambda pair: pair[1], reverse=True)
+        result = permutation_importance(
+            pipeline, x_test, y_test, n_repeats=5, random_state=seed, scoring="r2"
+        )
+        ranked = sorted(
+            zip(x_test.columns, result.importances_mean),
+            key=lambda pair: pair[1],
+            reverse=True,
+        )
         return {name: round(float(value), 4) for name, value in ranked[:top_n]}
-    except (AttributeError, KeyError, ValueError):
+    except (ValueError, AttributeError):
         return {}
 
 
