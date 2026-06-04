@@ -160,6 +160,6 @@ directly (training it once on first run, cached), so the same `app/ui.py` runs o
 ## Docs
 
 - Data card: [docs/data_card.md](docs/data_card.md)
-- Original design spec & plan (the project started as a Food Delivery ETA build, then
-  pivoted to laptops): [docs/superpowers/](docs/superpowers/)
+- Design spec & implementation plan: [docs/superpowers/](docs/superpowers/)
+  (the project pivoted from an earlier Food Delivery ETA build — that history is in git).
 ```
