@@ -227,3 +227,4 @@ model/artifacts/*
 # IDE and tooling (not part of the deliverable)
 .idea/
 uv.lock
+.playwright-mcp/
