@@ -1,4 +1,7 @@
-"""Build the SUML presentation deck (slides.pptx). Run: python docs/build_slides.py"""
+"""Build the SUML presentation deck (slides.pptx). Run: python docs/build_slides.py
+
+Business-focused deck: what it does, ease of use, retraining, use cases.
+"""
 
 from __future__ import annotations
 
@@ -55,7 +58,7 @@ def text(
     align=PP_ALIGN.LEFT,
     anchor=MSO_ANCHOR.TOP,
     bullet=False,
-    space=8,
+    space=10,
 ):
     box = s.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
     tf = box.text_frame
@@ -144,23 +147,39 @@ def panel(s, left, top, width, height, header, lines):
         run.font.color.rgb = DARK
 
 
+def banner(s, left, top, width, height, label, fill=TEAL, color=WHITE, size=22):
+    box = rrect(s, left, top, width, height, fill)
+    box.text_frame.word_wrap = True
+    box.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    box.text_frame.margin_left = Pt(14)
+    box.text_frame.margin_right = Pt(14)
+    p = box.text_frame.paragraphs[0]
+    p.alignment = PP_ALIGN.CENTER
+    r = p.add_run()
+    r.text = label
+    r.font.size = Pt(size)
+    r.font.bold = True
+    r.font.name = HEAD
+    r.font.color.rgb = color
+
+
 def picture(s, name, left, top, width):
     path = IMG / name
     if path.exists():
         s.shapes.add_picture(str(path), Inches(left), Inches(top), width=Inches(width))
 
 
-# --- Slide 1: title (dark) ---
+# --- Slide 1: title ---
 s = slide(NAVY, motif=False)
 rrect(s, 0, 0, 0.32, 7.5, TEAL)
-text(s, 0.9, 2.3, 11.5, 1.4, "Laptop Price Predictor", size=52, color=WHITE, bold=True, font=HEAD)
+text(s, 0.9, 2.3, 11.5, 1.4, "Wycena laptopa", size=54, color=WHITE, bold=True, font=HEAD)
 text(
     s,
     0.9,
     3.7,
     11.5,
     0.9,
-    "Predykcja ceny laptopa ze specyfikacji — AutoML, FastAPI, Streamlit, Docker",
+    "Aplikacja, która szacuje cenę laptopa na podstawie jego specyfikacji",
     size=22,
     color=ICE,
     font=BODY,
@@ -179,9 +198,9 @@ text(
 )
 text(s, 0.9, 6.0, 11.5, 0.5, "Grupa: [numery indeksów]", size=15, color=ICE, font=BODY)
 
-# --- Slide 2: problem ---
+# --- Slide 2: what & why ---
 s = slide()
-title(s, "Problem i wartość biznesowa")
+title(s, "Co to robi i po co")
 text(
     s,
     0.7,
@@ -189,140 +208,136 @@ text(
     6.6,
     4.6,
     [
-        "Wycena laptopa wprost wpływa na sprzedaż i marżę (sklepy, marketplace, wycena używanego sprzętu).",
-        "Za drogo — nie sprzeda się; za tanio — tracimy marżę.",
-        "Aplikacja przewiduje cenę (regresja) z marki, typu, RAM, dysku, ekranu, CPU/GPU i systemu.",
+        "Szacuje cenę laptopa na podstawie specyfikacji: marki, typu, RAM, dysków, ekranu, CPU/GPU.",
+        "Wartość: trafna cena = szybsza sprzedaż i lepsza marża.",
+        "Dla sklepów, platform marketplace i skupu sprzętu używanego.",
     ],
-    size=17,
+    size=18,
     bullet=True,
-    space=14,
+    space=16,
 )
 picture(s, "feature_scatter.png", 7.7, 2.1, 5.0)
 
-# --- Slide 3: data ---
+# --- Slide 3: ease of use ---
 s = slide()
-title(s, "Dane i czyszczenie")
+title(s, "Proste w użyciu")
 text(
     s,
     0.7,
     1.9,
-    6.6,
+    5.6,
     4.6,
     [
-        "Źródło: Kaggle laptop price (1303 wiersze) — dołączony do repo.",
-        'Surowe pola to teksty: RAM "8GB", waga "1.37kg", rozdzielczość/CPU/pamięć.',
-        "features.py: parsowanie → RAM, waga, PPI, touch/IPS, SSD/HDD, marki CPU/GPU; + czyszczenie złych wierszy.",
-        "Brak CSV → generator syntetyczny o tym samym schemacie (fallback).",
+        "Otwierasz stronę, wpisujesz specyfikację, klikasz — cena w sekundę.",
+        "Bez instalacji i bez znajomości kodu.",
+        "Dla integracji z innymi systemami: gotowe API.",
     ],
-    size=16,
+    size=18,
     bullet=True,
-    space=12,
+    space=16,
 )
-picture(s, "target_hist.png", 7.8, 2.2, 4.9)
+picture(s, "ui.png", 6.7, 1.6, 6.0)
 
-# --- Slide 4: architecture ---
+# --- Slide 4: accuracy ---
 s = slide()
-title(s, "Architektura: data | model | app")
-boxes = [
-    ("data", "load + feature engineering\nczyszczenie + split"),
-    ("model", "FLAML AutoML + log-target\nmodel.joblib + metrics.json"),
-    ("app", "FastAPI /predict\nStreamlit UI"),
-]
-for (name, desc), x in zip(boxes, [0.9, 4.9, 8.9]):
-    b = rrect(s, x, 2.6, 3.5, 2.0, ICE)
-    tf = b.text_frame
-    tf.word_wrap = True
-    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-    p = tf.paragraphs[0]
-    p.alignment = PP_ALIGN.CENTER
-    rr = p.add_run()
-    rr.text = name
-    rr.font.size = Pt(26)
-    rr.font.bold = True
-    rr.font.name = HEAD
-    rr.font.color.rgb = NAVY
-    for ln in desc.split("\n"):
-        pp = tf.add_paragraph()
-        pp.alignment = PP_ALIGN.CENTER
-        r3 = pp.add_run()
-        r3.text = ln
-        r3.font.size = Pt(12)
-        r3.font.name = BODY
-        r3.font.color.rgb = DARK
-for ax in (4.45, 8.45):
-    arr = s.shapes.add_shape(
-        MSO_SHAPE.RIGHT_ARROW, Inches(ax), Inches(3.35), Inches(0.4), Inches(0.5)
-    )
-    arr.fill.solid()
-    arr.fill.fore_color.rgb = TEAL
-    arr.line.fill.background()
-    arr.shadow.inherit = False
-banner = rrect(s, 0.9, 5.1, 11.5, 1.0, NAVY)
-banner.text_frame.word_wrap = True
-banner.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-banner.text_frame.margin_left = Pt(16)
-br = banner.text_frame.paragraphs[0].add_run()
-br.text = "Wszystko sterowane przez config.yaml — zmiana datasetu lub retuning to zmiana configu, nie kodu."
-br.font.size = Pt(16)
-br.font.bold = True
-br.font.name = BODY
-br.font.color.rgb = WHITE
-
-# --- Slide 5: AutoML ---
-s = slide()
-title(s, "Model: AutoML (FLAML)")
-text(
-    s,
-    0.7,
-    1.9,
-    6.6,
-    4.6,
-    [
-        "AutoML.fit przeszukuje estymatory (lgbm, rf, extra_tree) i składa je w ensemble.",
-        "log-target: trenujemy na log(cena), przewidujemy realną cenę (uczciwe R2 w walucie).",
-        "Cały preprocessing + model w jednym sklearn Pipeline (model.joblib).",
-        "Ważność cech liczona permutacyjnie (model-agnostic).",
-    ],
-    size=16,
-    bullet=True,
-    space=12,
-)
-picture(s, "feat_importance.png", 7.6, 2.2, 5.2)
-
-# --- Slide 6: results ---
-s = slide()
-title(s, "Wyniki modelu")
-card(s, 0.9, 2.5, 3.6, 2.2, "0,85", "R² (cena, INR)")
-card(s, 4.85, 2.5, 3.6, 2.2, "9,6k", "MAE (INR)")
-card(s, 8.8, 2.5, 3.6, 2.2, "14,6k", "RMSE (INR)")
+title(s, "Na ile trafne?")
+card(s, 0.9, 2.4, 3.4, 2.2, "~85%", "zmienności ceny\nwyjaśnia model")
 text(
     s,
     0.9,
-    5.1,
-    11.5,
-    0.8,
-    "FLAML ensemble + log-target · 20% holdout · najważniejsze cechy: RAM, SSD, typ, CPU.",
-    size=16,
+    4.9,
+    5.2,
+    1.4,
+    "Im więcej danych, tym stabilniejsza wycena. Najważniejsze cechy: RAM, dysk SSD, typ, procesor.",
+    size=15,
     color=MUTED,
-    align=PP_ALIGN.CENTER,
+)
+picture(s, "feat_importance.png", 6.6, 2.1, 6.2)
+
+# --- Slide 5: retraining ---
+s = slide()
+title(s, "Model nadąża za rynkiem")
+text(
+    s,
+    0.7,
+    1.9,
+    11.8,
+    2.6,
+    [
+        "Ceny się zmieniają (nowe modele, sezon, promocje) — model można dotrenować.",
+        "Dotrenowanie = podmiana pliku z danymi i jedno uruchomienie. Bez zmian w kodzie.",
+        "Dzięki temu wycena pozostaje aktualna.",
+    ],
+    size=18,
+    bullet=True,
+    space=16,
+)
+banner(s, 0.9, 5.2, 11.5, 1.1, "Dotrenowanie = nowe dane + 1 komenda → świeży model")
+
+# --- Slide 6: serving / integration ---
+s = slide()
+title(s, "Dla ludzi i dla systemów")
+panel(
+    s,
+    0.8,
+    2.0,
+    5.7,
+    4.0,
+    "Strona (dla ludzi)",
+    [
+        "Formularz w przeglądarce → cena",
+        "Dla pracowników i klientów",
+        "Działa też samodzielnie w chmurze",
+    ],
+)
+panel(
+    s,
+    6.8,
+    2.0,
+    5.7,
+    4.0,
+    "API (dla systemów)",
+    [
+        "Integracja z e-commerce / ERP",
+        "Zwraca cenę w formacie JSON",
+        "Interaktywna dokumentacja online",
+    ],
 )
 
-# --- Slide 7: serving ---
+# --- Slide 7: deployment / portability ---
 s = slide()
-title(s, "Wystawienie: API + UI")
+title(s, "Uruchomienie: jedna komenda")
+text(
+    s,
+    0.7,
+    1.9,
+    11.8,
+    2.6,
+    [
+        "docker compose up — i działa, na każdym komputerze.",
+        "Zero konfiguracji systemu; zależności instalują się same.",
+        "Łatwe przeniesienie i odtworzenie środowiska.",
+    ],
+    size=18,
+    bullet=True,
+    space=16,
+)
+banner(s, 0.9, 5.2, 11.5, 1.1, "Jedna komenda uruchamia całość")
+
+# --- Slide 8: use cases ---
+s = slide()
+title(s, "Zastosowania")
 panel(
     s,
     0.8,
     2.0,
     5.7,
     4.2,
-    "FastAPI (usługa)",
+    "Sprzedaż",
     [
-        "POST /predict — przewidywana cena",
-        "GET /health — status + czy model wczytany",
-        "GET /model-info — metryki i metadane",
-        "Interaktywne /docs (OpenAPI) za darmo",
-        "Walidacja wejścia Pydantic → 422",
+        "Szybka wstępna wycena oferty",
+        "Weryfikacja, czy cena jest rynkowa",
+        "Spójne ceny w całym zespole",
     ],
 )
 panel(
@@ -331,90 +346,54 @@ panel(
     2.0,
     5.7,
     4.2,
-    "Streamlit (UI)",
+    "Skup i integracja",
     [
-        "Formularz specyfikacji laptopa",
-        "Woła API i pokazuje cenę",
-        "Tryb standalone (model lokalnie) na Streamlit Cloud",
-        "Panel z metrykami + ważność cech",
+        "Wycena sprzętu używanego",
+        "Wsparcie negocjacji",
+        "Automatyczna wycena przez API",
     ],
 )
 
-# --- Slide 8: portability ---
+# --- Slide 9: quality / trust ---
 s = slide()
-title(s, "Przenoszalność i odtwarzalność")
-text(
-    s,
-    0.7,
-    1.9,
-    7.2,
-    4.6,
-    [
-        "docker compose up --build → dwa serwisy: api + ui.",
-        "Model trenowany podczas budowania obrazu — gotowy od razu.",
-        "Zależności przypięte; obraz python:3.11-slim, użytkownik non-root.",
-        "packages.txt (libgomp1 dla LightGBM); .gitattributes wymusza LF.",
-        "config.yaml jako jedno źródło prawdy.",
-    ],
-    size=16,
-    bullet=True,
-    space=11,
-)
-banner = rrect(s, 8.3, 2.4, 4.2, 2.4, TEAL)
-banner.text_frame.word_wrap = True
-banner.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-banner.text_frame.margin_left = Pt(14)
-banner.text_frame.margin_right = Pt(14)
-bp = banner.text_frame.paragraphs[0]
-bp.alignment = PP_ALIGN.CENTER
-brun = bp.add_run()
-brun.text = "Jedna komenda\nuruchamia całość"
-brun.font.size = Pt(24)
-brun.font.bold = True
-brun.font.name = HEAD
-brun.font.color.rgb = WHITE
-
-# --- Slide 9: quality ---
-s = slide()
-title(s, "Jakość kodu i organizacja")
-card(s, 0.9, 2.4, 3.6, 2.0, "10/10", "pylint")
-card(s, 4.85, 2.4, 3.6, 2.0, "28", "testów (pytest)")
-card(s, 8.8, 2.4, 3.6, 2.0, "CI", "GitHub Actions")
+title(s, "Solidne i gotowe do utrzymania")
+card(s, 1.4, 2.4, 3.4, 2.0, "10/10", "jakość kodu (pylint)")
+card(s, 5.0, 2.4, 3.4, 2.0, "28", "testów automatycznych")
+card(s, 8.6, 2.4, 3.4, 2.0, "CI", "automatyczna kontrola")
 text(
     s,
     0.7,
     4.8,
     12.0,
-    1.8,
+    1.6,
     [
-        "PEP8 + black + isort, type hints i docstringi w całym kodzie.",
-        "Ścisły podział data | model | app; modularność funkcji i katalogów.",
-        "Czysta historia commitów; data card + EDA w docs/.",
+        "Czysty, modularny kod (data | model | app) i pełna dokumentacja.",
+        "Powtarzalne środowisko — łatwe w rozwoju i utrzymaniu.",
     ],
     size=16,
     bullet=True,
     space=10,
 )
 
-# --- Slide 10: demo + closing (dark) ---
+# --- Slide 10: summary + demo ---
 s = slide(NAVY, motif=False)
 rrect(s, 0, 0, 0.32, 7.5, TEAL)
-title(s, "Demo i podsumowanie", color=WHITE)
+title(s, "Podsumowanie i demo", color=WHITE)
 text(
     s,
     0.9,
     1.9,
     11.4,
-    4.0,
+    3.6,
     [
-        "Demo: docker compose up --build → UI :8501, API :8000/docs → wycena na żywo.",
-        "Retraining: nowy CSV w data/raw/ + python -m model.train (bez zmian w kodzie).",
+        "Demo na żywo: wpisujemy specyfikację → otrzymujemy cenę.",
+        "Łatwe w użyciu, trafne (~85%), gotowe do dotrenowania i integracji.",
         "Repo: github.com/nimzoi/SUML-project",
     ],
-    size=18,
+    size=19,
     color=ICE,
     bullet=True,
-    space=14,
+    space=16,
 )
 text(s, 0.9, 6.0, 11.4, 0.8, "Dziękujemy — pytania?", size=24, color=WHITE, bold=True, font=HEAD)
 
