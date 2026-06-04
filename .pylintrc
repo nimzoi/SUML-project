@@ -1,0 +1,8 @@
+[FORMAT]
+max-line-length=100
+
+[BASIC]
+good-names=df,rng,ex,_,x_train,x_test,y_train,y_test
+
+[MESSAGES CONTROL]
+disable=too-few-public-methods,duplicate-code

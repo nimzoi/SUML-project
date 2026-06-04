@@ -1,0 +1,35 @@
+data:
+  raw_path: data/raw/Food_Delivery_Times.csv
+  synthetic:
+    enabled: true
+    n_rows: 1000
+    seed: 42
+  target: Delivery_Time_min
+  numeric_features:
+    - Distance_km
+    - Preparation_Time_min
+    - Courier_Experience_yrs
+  categorical_features:
+    - Weather
+    - Traffic_Level
+    - Time_of_Day
+    - Vehicle_Type
+  test_size: 0.2
+  random_state: 42
+model:
+  task: regression
+  time_budget_s: 60
+  metric: mae
+  estimator_list:
+    - lgbm
+    - rf
+    - extra_tree
+  artifact_dir: model/artifacts
+  artifact_name: model.joblib
+  metrics_name: metrics.json
+  seed: 42
+api:
+  host: 0.0.0.0
+  port: 8000
+ui:
+  api_url: http://localhost:8000

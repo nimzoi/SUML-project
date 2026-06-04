@@ -1,0 +1,12 @@
+pandas==2.3.3
+numpy==2.2.6
+scikit-learn==1.7.1
+flaml==2.6.0
+lightgbm==4.6.0
+joblib==1.5.1
+PyYAML==6.0.3
+pydantic==2.11.7
+fastapi==0.116.1
+uvicorn[standard]==0.40.0
+streamlit==1.47.1
+requests==2.32.4
