@@ -1,4 +1,5 @@
 """Tests for split and preprocessing."""
+
 from config import load_config
 from data.load import load_data
 from data.prepare import build_preprocessor, split_data

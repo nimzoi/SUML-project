@@ -1,4 +1,5 @@
 """Tests for the synthetic data generator."""
+
 from data.synthetic import COLUMNS, generate
 
 

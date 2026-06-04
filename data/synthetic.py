@@ -1,4 +1,5 @@
 """Generate a synthetic Food Delivery dataset matching the real Kaggle schema."""
+
 from __future__ import annotations
 
 from typing import List

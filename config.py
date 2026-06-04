@@ -1,4 +1,5 @@
 """Load and validate the project configuration from config.yaml."""
+
 from __future__ import annotations
 
 from pathlib import Path

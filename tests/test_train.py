@@ -1,4 +1,5 @@
 """Tests for the training pipeline."""
+
 import joblib
 import pandas as pd
 

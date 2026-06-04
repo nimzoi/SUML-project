@@ -1,4 +1,5 @@
 """Load the dataset (real CSV if present, otherwise synthetic) and validate it."""
+
 from __future__ import annotations
 
 import logging
@@ -22,9 +23,7 @@ def load_data(config: AppConfig) -> pd.DataFrame:
         logger.info("Real CSV not found at %s; generating synthetic dataset", raw_path)
         df = synthetic.generate(config.data.synthetic.n_rows, config.data.synthetic.seed)
     else:
-        raise FileNotFoundError(
-            f"No dataset at {raw_path} and synthetic generation is disabled"
-        )
+        raise FileNotFoundError(f"No dataset at {raw_path} and synthetic generation is disabled")
     validate_schema(df, config, require_target=True)
     return df
 

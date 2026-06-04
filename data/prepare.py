@@ -1,4 +1,5 @@
 """Split the data and build the preprocessing ColumnTransformer."""
+
 from __future__ import annotations
 
 from typing import Tuple

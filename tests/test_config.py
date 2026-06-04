@@ -1,4 +1,5 @@
 """Tests for the configuration loader."""
+
 import pytest
 
 from config import AppConfig, load_config

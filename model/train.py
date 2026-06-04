@@ -1,4 +1,5 @@
 """Train the model with FLAML AutoML and persist the artifact + metrics."""
+
 from __future__ import annotations
 
 import json
