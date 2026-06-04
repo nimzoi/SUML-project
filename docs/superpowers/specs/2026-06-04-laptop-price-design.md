@@ -73,7 +73,7 @@ the artifact directly in standalone mode).
 | `Ram` = "8GB" | `Ram` (int) |
 | `Weight` = "1.37kg" | `Weight` (float) |
 | `ScreenResolution` = "IPS … 1920x1080" | `Touchscreen` (0/1), `Ips` (0/1), `ppi` (float) |
-| `Cpu` = "Intel Core i5 7200U …" | `Cpu_brand` (i3/i5/i7/Other Intel/AMD) |
+| `Cpu` = "Intel Core i5 7200U …" | `Cpu_rank` (ordinal tier: i3 < i5 < i7) |
 | `Memory` = "256GB SSD + 1TB HDD" | `SSD` (GB), `HDD` (GB) |
 | `Gpu` = "Nvidia …" | `Gpu_brand` (Intel/Nvidia/AMD) |
 | `OpSys` | `Os` (Windows/Mac/Other) |
@@ -82,8 +82,8 @@ Also drops the index column, drops `ARM` GPUs, and **drops rows with missing/inv
 engineered values** (`Ram`/`Weight`/`ppi`) — real cleaning.
 
 **Engineered schema (target = `Price`):**
-numeric `Ram, Weight, Inches, ppi, SSD, HDD, Touchscreen, Ips`;
-categorical `Company, TypeName, Cpu_brand, Gpu_brand, Os`.
+numeric `Ram, Weight, Inches, ppi, SSD, HDD, Touchscreen, Ips, Cpu_rank`;
+categorical `Company, TypeName, Gpu_brand, Os`.
 
 - **`load.py`**: real CSV → `engineer_features`; else synthetic (already engineered).
   Then `validate_schema` checks required columns exist + non-empty (per-cell nulls allowed
@@ -100,7 +100,8 @@ categorical `Company, TypeName, Cpu_brand, Gpu_brand, Os`.
   `<model>` is `AutoML()` or, when `log_target` is set, `TransformedTargetRegressor(AutoML(),
   func=log1p, inverse_func=expm1)` so the pipeline trains on log-price but **predicts the
   real price** (honest R² in currency units). FLAML settings (task, time budget, metric=r2,
-  `estimator_list=[lgbm, rf, extra_tree]`, `ensemble=True`, seed) come from config.
+  `estimator_list=[lgbm]`, `ensemble=False`, `monotone_increasing` (Ram/SSD/HDD/ppi/Cpu_rank
+  constrained non-decreasing via LightGBM `monotone_constraints`), seed) come from config.
 - **Artifacts:** `model.joblib` (the Pipeline) + `metrics.json` (mae, rmse, r2,
   best_estimator, training_date, n_rows, data_source, feature_columns, target, and
   **permutation feature importance** — model-agnostic, works through the TTR + ensemble).
@@ -126,7 +127,8 @@ categorical `Company, TypeName, Cpu_brand, Gpu_brand, Os`.
 
 Single source of truth, validated on load. `data` (raw path, synthetic toggle/size/seed,
 target, numeric/categorical feature lists, test split); `model` (task, time_budget_s,
-metric, estimator_list, `ensemble`, `log_target`, artifact paths, seed); `api`/`ui`.
+metric, estimator_list, `ensemble`, `log_target`, `monotone_increasing`, artifact paths,
+seed); `api`/`ui`.
 Swapping dataset / retuning = config edit, not code edit.
 
 ## 8. Engineering extras

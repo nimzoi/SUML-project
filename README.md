@@ -21,7 +21,7 @@ Three independent packages, communicating through a saved artifact and HTTP:
 - **data/** — load the raw CSV and **engineer + clean** it (`features.py`: parse "8GB"→8,
   "1.37kg"→1.37, screen resolution→PPI/touch/IPS, CPU/memory/GPU→brand & capacities), or
   generate synthetic data with the same engineered schema; then split + preprocess.
-- **model/** — train via AutoML (FLAML, stacked ensemble, log-target) and persist one
+- **model/** — train via AutoML (FLAML) with a log-target and monotone constraints, and persist one
   scikit-learn `Pipeline` (`model.joblib`) plus `metrics.json`.
 - **app/** — FastAPI service serving `/predict`, `/health`, `/model-info`; a Streamlit UI
   calls the API (with a standalone fallback that loads the model directly when no API is
@@ -99,7 +99,8 @@ Single source of truth, validated on load. Key sections:
 
 - `data` — dataset path, synthetic toggle + size + seed, target, numeric/categorical
   feature lists, test split.
-- `model` — AutoML task, `time_budget_s`, metric, `estimator_list`, `ensemble` (stacking),
+- `model` — AutoML task, `time_budget_s`, metric, `estimator_list`, `ensemble`,
+  `monotone_increasing` (guarantees more RAM/SSD/better CPU never lowers the price),
   `log_target` (train on log-price, predict real price), artifact paths, seed.
   **This is the AutoML config.**
 - `api` / `ui` — host/port and the API URL the UI calls.

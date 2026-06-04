@@ -248,7 +248,7 @@ text(
     4.9,
     5.2,
     1.4,
-    "Im więcej danych, tym stabilniejsza wycena. Najważniejsze cechy: RAM, dysk SSD, typ, procesor.",
+    "Gwarancja: więcej RAM/SSD/lepszy CPU → nigdy niższa cena. Najważniejsze cechy: RAM, SSD, typ.",
     size=15,
     color=MUTED,
 )

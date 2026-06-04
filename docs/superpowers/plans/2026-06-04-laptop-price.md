@@ -45,17 +45,18 @@ data:
   raw_path: data/raw/laptop_data.csv
   synthetic: {enabled: true, n_rows: 1300, seed: 42}
   target: Price
-  numeric_features: [Ram, Weight, Inches, ppi, SSD, HDD, Touchscreen, Ips]
-  categorical_features: [Company, TypeName, Cpu_brand, Gpu_brand, Os]
+  numeric_features: [Ram, Weight, Inches, ppi, SSD, HDD, Touchscreen, Ips, Cpu_rank]
+  categorical_features: [Company, TypeName, Gpu_brand, Os]
   test_size: 0.2
   random_state: 42
 model:
   task: regression
   time_budget_s: 60
   metric: r2
-  estimator_list: [lgbm, rf, extra_tree]
-  ensemble: true
+  estimator_list: [lgbm]
+  ensemble: false
   log_target: true
+  monotone_increasing: [Ram, SSD, HDD, ppi, Cpu_rank]
   artifact_dir: model/artifacts
   artifact_name: model.joblib
   metrics_name: metrics.json
@@ -108,7 +109,7 @@ import pandas as pd
 
 ENGINEERED_COLUMNS = [
     "Company", "TypeName", "Inches", "Ram", "Weight", "Touchscreen", "Ips",
-    "ppi", "Cpu_brand", "SSD", "HDD", "Gpu_brand", "Os", "Price",
+    "ppi", "Cpu_rank", "SSD", "HDD", "Gpu_brand", "Os", "Price",
 ]
 
 
@@ -150,7 +151,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["Ips"] = df["ScreenResolution"].str.contains("IPS").astype(int)
     resolution = df["ScreenResolution"].str.extract(r"(\d+)x(\d+)").astype(float)
     df["ppi"] = ((resolution[0] ** 2 + resolution[1] ** 2) ** 0.5 / df["Inches"]).round(2)
-    df["Cpu_brand"] = df["Cpu"].apply(_cpu_brand)
+    df["Cpu_rank"] = df["Cpu"].apply(lambda t: CPU_RANK[_cpu_brand(t)])
     df[["SSD", "HDD"]] = df["Memory"].apply(_parse_memory)
     df["Gpu_brand"] = df["Gpu"].apply(lambda text: str(text).split()[0])
     df = df[df["Gpu_brand"] != "ARM"]
@@ -362,4 +363,4 @@ def train(config: AppConfig) -> Dict:
 
 **Open dependency:** group index numbers (Task 16).
 
-**Type consistency:** `AppConfig.feature_columns`/`artifact_path`/`metrics_path`/`log_target`/`ensemble`, `engineer_features`, `load_data`, `split_data`, `build_preprocessor`, `regression_metrics`, `train(config)->dict`, `REQUEST_TO_COLUMN`/`to_feature_row`/`predict_price`, and the Pydantic enums are used identically across tasks; engineered column names (`Ram`, `Cpu_brand`, `ppi`, …) match `features.py`, `config.yaml` and the schemas.
+**Type consistency:** `AppConfig.feature_columns`/`artifact_path`/`metrics_path`/`log_target`/`ensemble`, `engineer_features`, `load_data`, `split_data`, `build_preprocessor`, `regression_metrics`, `train(config)->dict`, `REQUEST_TO_COLUMN`/`to_feature_row`/`predict_price`, and the Pydantic enums are used identically across tasks; engineered column names (`Ram`, `Cpu_rank`, `ppi`, …) match `features.py`, `config.yaml` and the schemas.
