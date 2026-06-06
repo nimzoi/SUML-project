@@ -217,12 +217,15 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Project data & artifacts (track the canonical dataset, ignore everything else)
+# Project data & artifacts: track the canonical dataset and a ready-to-run trained
+# model (so teammates can clone and run without retraining); ignore everything else.
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/laptop_data.csv
 model/artifacts/*
 !model/artifacts/.gitkeep
+!model/artifacts/model.joblib
+!model/artifacts/metrics.json
 
 # IDE and tooling (not part of the deliverable)
 .idea/

@@ -1,0 +1,40 @@
+{
+  "mae": 9509.1082,
+  "rmse": 14793.3166,
+  "r2": 0.8468,
+  "best_estimator": "lgbm",
+  "training_date": "2026-06-06T10:48:15.275220+00:00",
+  "n_rows": 1302,
+  "data_source": "real",
+  "feature_columns": [
+    "Ram",
+    "Weight",
+    "Inches",
+    "ppi",
+    "SSD",
+    "HDD",
+    "Touchscreen",
+    "Ips",
+    "Cpu_rank",
+    "Company",
+    "TypeName",
+    "Gpu_brand",
+    "Os"
+  ],
+  "target": "Price",
+  "feature_importance": {
+    "Ram": 0.2192,
+    "Weight": 0.1287,
+    "TypeName": 0.1137,
+    "SSD": 0.0971,
+    "Cpu_rank": 0.0714,
+    "Company": 0.0431,
+    "ppi": 0.043,
+    "Inches": 0.0267,
+    "Ips": 0.0189,
+    "Gpu_brand": 0.0172,
+    "Os": 0.0114,
+    "HDD": 0.0077,
+    "Touchscreen": 0.0036
+  }
+}

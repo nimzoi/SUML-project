@@ -38,7 +38,7 @@ Aby zatrzymać: `Ctrl+C`, a następnie `docker compose down`.
 git clone https://github.com/nimzoi/SUML-project.git
 cd SUML-project
 python -m pip install -r requirements-dev.txt   # instalacja zależności
-python -m model.train                            # trening modelu (~1 min)
+python -m model.train                            # opcjonalnie: wytrenowany model jest już w repo
 streamlit run app/ui.py                           # uruchom aplikację (UI)
 ```
 
@@ -99,6 +99,8 @@ Model można dotrenować na świeższych danych **bez zmian w kodzie**:
 2. Uruchom `python -m model.train`.
 3. Pliki `model/artifacts/model.joblib` i `metrics.json` zostaną przebudowane; aplikacja
    użyje nowego modelu po restarcie.
+4. **Zacommituj** przebudowane pliki (są śledzone w repo), żeby cała grupa miała aktualny
+   model bez ponownego trenowania.
 
 > **Uwaga:** warstwa czyszczenia danych (`data/features.py`) jest dopasowana do powyższego
 > schematu kolumn. Zbiór o innym układzie kolumn wymaga dostosowania `data/features.py`.

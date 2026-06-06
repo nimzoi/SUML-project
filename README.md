@@ -94,7 +94,7 @@ end-to-end on real data with no manual steps.
 
 ```bash
 python -m pip install -r requirements-dev.txt
-python -m model.train      # writes model/artifacts/model.joblib + metrics.json
+python -m model.train      # optional: a trained model is committed; run only to retrain
 make api                   # or: uvicorn app.api:app --host 0.0.0.0 --port 8000
 make ui                    # or: streamlit run app/ui.py
 ```
