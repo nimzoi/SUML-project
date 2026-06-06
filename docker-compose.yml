@@ -1,7 +1,7 @@
 services:
   api:
     build: .
-    image: food-delivery-eta:latest
+    image: laptop-price:latest
     command: uvicorn app.api:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
@@ -11,7 +11,7 @@ services:
       timeout: 5s
       retries: 3
   ui:
-    image: food-delivery-eta:latest
+    image: laptop-price:latest
     command: streamlit run app/ui.py --server.port 8501 --server.address 0.0.0.0
     environment:
       - API_URL=http://api:8000

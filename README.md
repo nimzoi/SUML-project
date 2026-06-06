@@ -168,4 +168,5 @@ directly (training it once on first run, cached), so the same `app/ui.py` runs o
 
 ## Docs
 
+- Instrukcja instalacji (PL): [docs/INSTRUKCJA.md](docs/INSTRUKCJA.md) — step-by-step setup, usage and retraining for end users.
 - Data card: [docs/data_card.md](docs/data_card.md) — the dataset, cleaning/feature engineering, and model baseline.
