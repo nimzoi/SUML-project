@@ -19,6 +19,7 @@ from config import AppConfig, load_config
 from data.load import load_data
 from data.prepare import build_preprocessor, split_data
 from model.evaluate import regression_metrics
+from model.schemas import ModelInfo
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def _monotone_constraints(columns, increasing) -> str:
     )
 
 
-def train(config: AppConfig) -> Dict:  # pylint: disable=too-many-locals
+def train(config: AppConfig) -> ModelInfo:  # pylint: disable=too-many-locals
     """Run the full training pipeline and write model.joblib + metrics.json."""
     df = load_data(config)
     data_source = "real" if Path(config.data.raw_path).exists() else "synthetic"
@@ -65,22 +66,24 @@ def train(config: AppConfig) -> Dict:  # pylint: disable=too-many-locals
     pipeline = Pipeline(steps=[("prep", preprocessor), ("model", model_step)])
     metrics = regression_metrics(y_test, pipeline.predict(x_test))
     automl = getattr(model_step, "regressor_", model_step)
-    report = {
-        **metrics,
-        "best_estimator": automl.best_estimator,
-        "training_date": datetime.now(timezone.utc).isoformat(),
-        "n_rows": int(len(df)),
-        "data_source": data_source,
-        "feature_columns": config.feature_columns,
-        "target": config.data.target,
-        "feature_importance": _feature_importance(pipeline, x_test, y_test, config.model.seed),
-    }
+    report = ModelInfo(
+        mae=metrics.mae,
+        rmse=metrics.rmse,
+        r2=metrics.r2,
+        best_estimator=automl.best_estimator,
+        training_date=datetime.now(timezone.utc).isoformat(),
+        n_rows=int(len(df)),
+        data_source=data_source,
+        feature_columns=config.feature_columns,
+        target=config.data.target,
+        feature_importance=_feature_importance(pipeline, x_test, y_test, config.model.seed),
+    )
 
     Path(config.model.artifact_dir).mkdir(parents=True, exist_ok=True)
     joblib.dump(pipeline, config.artifact_path)
     with config.metrics_path.open("w", encoding="utf-8") as handle:
-        json.dump(report, handle, indent=2)
-    logger.info("Saved model to %s | metrics=%s", config.artifact_path, metrics)
+        json.dump(report.model_dump(), handle, indent=2)
+    logger.info("Saved model to %s | metrics=%s", config.artifact_path, metrics.model_dump())
     return report
 
 

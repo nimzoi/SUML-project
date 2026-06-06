@@ -16,7 +16,7 @@ import streamlit as st
 
 from app.explain import explain_prediction, price_band, price_sensitivity
 from app.inference import predict_price
-from app.schemas import Company, CpuBrand, GpuBrand, Os, TypeName
+from app.schemas import Company, CpuBrand, GpuBrand, Os, PredictRequest, TypeName
 from config import load_config
 from model.train import train
 
@@ -117,14 +117,16 @@ def _local_model():
     return joblib.load(config.artifact_path)
 
 
-def get_prediction(payload: dict):
+def get_prediction(request: PredictRequest):
     """Zwróć (cena, źródło): najpierw API, w razie braku — model lokalny."""
     try:
-        response = requests.post(f"{API_URL}/predict", json=payload, timeout=REQUEST_TIMEOUT)
+        response = requests.post(
+            f"{API_URL}/predict", json=request.model_dump(mode="json"), timeout=REQUEST_TIMEOUT
+        )
         response.raise_for_status()
         return response.json()["price"], "API"
     except requests.RequestException:
-        return predict_price(_local_model(), payload), "model lokalny"
+        return predict_price(_local_model(), request), "model lokalny"
 
 
 def get_model_info() -> dict:
@@ -163,24 +165,24 @@ def _apply_preset() -> None:
             st.session_state[key] = value
 
 
-def _render_explanation(payload: dict) -> None:
+def _render_explanation(request: PredictRequest) -> None:
     """Pokaż wpływ poszczególnych cech na cenę względem laptopa bazowego (w PLN)."""
-    contributions = explain_prediction(_local_model(), payload)[:6]
+    contributions = explain_prediction(_local_model(), request)[:6]
     if not contributions:
         return
     st.markdown("**💡 Dlaczego ta cena? Wpływ cech względem laptopa bazowego (PLN):**")
-    st.bar_chart({label: round(delta * PLN_PER_INR) for label, delta in contributions})
+    st.bar_chart({item.label: round(item.amount * PLN_PER_INR) for item in contributions})
 
 
-def _render_sensitivity(payload: dict) -> None:
+def _render_sensitivity(request: PredictRequest) -> None:
     """Pokaż, jak zmienia się cena wraz z ilością RAM (reszta parametrów bez zmian)."""
-    prices = price_sensitivity(_local_model(), payload, "ram_gb", RAM_OPTIONS)
+    prices = price_sensitivity(_local_model(), request, "ram_gb", RAM_OPTIONS)
     st.markdown("**📈 Co jeśli więcej RAM? Szacowana cena wg RAM (PLN):**")
     st.bar_chart({f"{ram} GB": round(price * PLN_PER_INR) for ram, price in prices.items()})
 
 
-def _build_form() -> dict:  # pylint: disable=too-many-locals
-    """Wyrenderuj formularz specyfikacji i zwróć payload gotowy do wyceny."""
+def _build_form() -> PredictRequest:  # pylint: disable=too-many-locals
+    """Wyrenderuj formularz specyfikacji i zwróć zwalidowany PredictRequest."""
     st.selectbox("Przykładowa konfiguracja", list(PRESETS), key="preset", on_change=_apply_preset)
 
     col1, col2 = st.columns(2)
@@ -206,37 +208,37 @@ def _build_form() -> dict:  # pylint: disable=too-many-locals
 
     width, height = RESOLUTIONS[resolution]
     ppi = round((width**2 + height**2) ** 0.5 / inches, 2)
-    return {
-        "company": company,
-        "type_name": type_name,
-        "inches": inches,
-        "ram_gb": ram_gb,
-        "weight_kg": weight_kg,
-        "touchscreen": int(touchscreen),
-        "ips": int(ips),
-        "ppi": ppi,
-        "cpu_brand": cpu_brand,
-        "ssd_gb": ssd_gb,
-        "hdd_gb": hdd_gb,
-        "gpu_brand": gpu_brand,
-        "os": operating_system,
-    }
+    return PredictRequest(
+        company=company,
+        type_name=type_name,
+        inches=inches,
+        ram_gb=ram_gb,
+        weight_kg=weight_kg,
+        touchscreen=int(touchscreen),
+        ips=int(ips),
+        ppi=ppi,
+        cpu_brand=cpu_brand,
+        ssd_gb=ssd_gb,
+        hdd_gb=hdd_gb,
+        gpu_brand=gpu_brand,
+        os=operating_system,
+    )
 
 
-def _render_result(payload: dict) -> None:
+def _render_result(request: PredictRequest) -> None:
     """Policz cenę (z przedziałem), a pod nią pokaż wyjaśnienie i scenariusz RAM."""
     try:
-        price, source = get_prediction(payload)
+        price, source = get_prediction(request)
         info = get_model_info()
         mae = float(info["mae"]) if info and "mae" in info else price * 0.15
-        low, high = price_band(price, mae)
+        band = price_band(price, mae)
         st.metric("Szacowana cena", f"{_pln(price)} PLN")
         st.caption(
-            f"Przedział: {_pln(low)}–{_pln(high)} PLN · ≈ {_money(price)} INR · "
+            f"Przedział: {_pln(band.low)}–{_pln(band.high)} PLN · ≈ {_money(price)} INR · "
             f"źródło: {source} · wycena porównawcza"
         )
-        _render_explanation(payload)
-        _render_sensitivity(payload)
+        _render_explanation(request)
+        _render_sensitivity(request)
     except (requests.RequestException, ValueError, KeyError) as ex:
         st.error(f"Nie udało się policzyć ceny: {ex}")
 
@@ -250,10 +252,10 @@ def main() -> None:
     )
 
     _init_defaults()
-    payload = _build_form()
+    request = _build_form()
 
     if st.button("Oszacuj cenę", type="primary"):
-        _render_result(payload)
+        _render_result(request)
 
     with st.expander("ℹ️ Jak to działa i zastosowania"):
         st.markdown(

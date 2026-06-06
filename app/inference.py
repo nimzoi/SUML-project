@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 import pandas as pd
 
+from app.schemas import PredictRequest
 from data.features import CPU_RANK
 
 # Map snake_case request fields to the model's engineered column names.
@@ -25,17 +24,19 @@ REQUEST_TO_COLUMN = {
 }
 
 
-def to_feature_row(payload: Dict) -> pd.DataFrame:
-    """Map a snake_case request payload to a one-row model-input DataFrame.
+def to_feature_row(request: PredictRequest) -> pd.DataFrame:
+    """Map a validated request to a one-row model-input DataFrame.
 
-    The CPU brand is converted to its ordinal rank; column order does not matter
-    (the pipeline's ColumnTransformer selects by name).
+    Enums are dumped to their string values (the form the model was trained on) and the
+    CPU brand is converted to its ordinal rank. Column order does not matter — the
+    pipeline's ColumnTransformer selects by name.
     """
+    payload = request.model_dump(mode="json")
     row = {column: payload[field] for field, column in REQUEST_TO_COLUMN.items()}
     row["Cpu_rank"] = CPU_RANK[payload["cpu_brand"]]
     return pd.DataFrame([row])
 
 
-def predict_price(model, payload: Dict) -> float:
+def predict_price(model, request: PredictRequest) -> float:
     """Predict the laptop price for one configuration, rounded to 2 decimals."""
-    return round(float(model.predict(to_feature_row(payload))[0]), 2)
+    return round(float(model.predict(to_feature_row(request))[0]), 2)

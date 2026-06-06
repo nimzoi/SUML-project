@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from app.inference import predict_price
 from app.schemas import HealthResponse, PredictRequest, PredictResponse
 from config import load_config
+from model.schemas import ModelInfo
 
 logger = logging.getLogger(__name__)
 config = load_config()
@@ -41,14 +42,13 @@ def predict(request: PredictRequest) -> PredictResponse:
     model = _load_model()
     if model is None:
         raise HTTPException(status_code=503, detail="Model not available. Train it first.")
-    price = predict_price(model, request.model_dump(mode="json"))
-    return PredictResponse(price=price)
+    return PredictResponse(price=predict_price(model, request))
 
 
-@app.get("/model-info")
-def model_info() -> Dict:
+@app.get("/model-info", response_model=ModelInfo)
+def model_info() -> ModelInfo:
     """Return the persisted metrics/metadata for the current model."""
     if not config.metrics_path.exists():
         raise HTTPException(status_code=503, detail="No model metrics found. Train first.")
     with config.metrics_path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+        return ModelInfo(**json.load(handle))

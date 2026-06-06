@@ -21,10 +21,10 @@ def test_train_creates_artifact_and_metrics(tmp_path):
     report = train(cfg)
     assert cfg.artifact_path.exists()
     assert cfg.metrics_path.exists()
-    assert report["mae"] >= 0
-    assert report["r2"] <= 1.0
-    assert report["data_source"] in {"real", "synthetic"}
-    assert "best_estimator" in report
+    assert report.mae >= 0
+    assert report.r2 <= 1.0
+    assert report.data_source in {"real", "synthetic"}
+    assert report.best_estimator
 
 
 def test_saved_pipeline_predicts(tmp_path):

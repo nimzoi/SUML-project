@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Union
+from typing import List, Literal, Union
 
 import yaml
 from pydantic import BaseModel, Field
@@ -13,8 +13,8 @@ class SyntheticConfig(BaseModel):
     """Settings for synthetic data generation."""
 
     enabled: bool = True
-    n_rows: int = 1000
-    seed: int = 42
+    n_rows: int = Field(1000, gt=0)
+    seed: int = Field(42, ge=0)
 
 
 class DataConfig(BaseModel):
@@ -23,18 +23,18 @@ class DataConfig(BaseModel):
     raw_path: str
     synthetic: SyntheticConfig
     target: str
-    numeric_features: List[str]
-    categorical_features: List[str]
-    test_size: float = 0.2
+    numeric_features: List[str] = Field(min_length=1)
+    categorical_features: List[str] = Field(min_length=1)
+    test_size: float = Field(0.2, gt=0, lt=1)
     random_state: int = 42
 
 
 class ModelConfig(BaseModel):
     """AutoML and artifact settings."""
 
-    task: str = "regression"
-    time_budget_s: int = 60
-    metric: str = "mae"
+    task: Literal["regression", "classification"] = "regression"
+    time_budget_s: int = Field(60, gt=0)
+    metric: Literal["mae", "mse", "rmse", "r2", "mape"] = "mae"
     estimator_list: List[str] = Field(default_factory=lambda: ["lgbm", "rf", "extra_tree"])
     ensemble: bool = True
     log_target: bool = False
@@ -49,7 +49,7 @@ class ApiConfig(BaseModel):
     """FastAPI host/port."""
 
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = Field(8000, ge=1, le=65535)
 
 
 class UiConfig(BaseModel):
