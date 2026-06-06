@@ -7,6 +7,7 @@ from config import load_config
 
 
 def _payload():
+    """Return a snake_case request payload for a single laptop."""
     return {
         "company": "Dell",
         "type_name": "Notebook",
@@ -25,6 +26,7 @@ def _payload():
 
 
 def test_to_feature_row_shape_and_columns():
+    """to_feature_row maps the payload to one row with the 13 engineered model columns."""
     row = to_feature_row(_payload())
     assert row.shape == (1, 13)
     assert set(row.columns) == {
@@ -45,5 +47,6 @@ def test_to_feature_row_shape_and_columns():
 
 
 def test_predict_price_positive(trained_model):
+    """predict_price returns a positive price for the saved pipeline."""
     model = joblib.load(trained_model.artifact_path)
     assert predict_price(model, _payload()) > 0

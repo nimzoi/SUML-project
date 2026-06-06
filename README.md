@@ -1,10 +1,17 @@
 # Laptop Price Prediction
 
+![CI](https://github.com/nimzoi/SUML-project/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Code style: black](https://img.shields.io/badge/code%20style-black-000000)
+![pylint](https://img.shields.io/badge/pylint-10.00%2F10-brightgreen)
+
 Predicts a laptop's price (INR) from its specifications. Trained with **AutoML (FLAML)**,
 served as a **FastAPI** REST API with a **Streamlit** UI, and fully **containerized** with
 Docker Compose. Clean `data | model | app` separation, driven by a single `config.yaml`.
 
 > Course: Środowiska uruchomieniowe ML (SUML), PJATK — group project.
+
+![Laptop price UI](docs/img/ui.png)
 
 ## Business context
 
@@ -25,7 +32,8 @@ Three independent packages, communicating through a saved artifact and HTTP:
   scikit-learn `Pipeline` (`model.joblib`) plus `metrics.json`.
 - **app/** — FastAPI service serving `/predict`, `/health`, `/model-info`; a Streamlit UI
   calls the API (with a standalone fallback that loads the model directly when no API is
-  reachable).
+  reachable). The UI shows a **price range**, a per-feature **"why this price"** breakdown
+  (`app/explain.py`), and one-click **example presets**.
 
 Everything is driven by `config.yaml`, so swapping the dataset or retuning AutoML is a
 **config change, not a code change**.
@@ -56,8 +64,8 @@ SUML-project/
 │   ├── inference.py         # shared payload -> prediction helper (API + UI)
 │   ├── api.py               # FastAPI: /predict, /health, /model-info
 │   └── ui.py                # Streamlit front (API or standalone)
-├── tests/                   # pytest: data, model, schemas, inference, api, ui
-└── docs/                    # data card, EDA, design spec, plan
+├── tests/                   # pytest: data, features, model, schemas, inference, explain, api, ui
+└── docs/                    # data card, EDA plots, UI screenshot
 ```
 
 ## Requirements

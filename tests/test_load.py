@@ -8,13 +8,15 @@ from data.load import load_data, validate_schema
 
 
 def test_load_real_csv_when_present():
-    cfg = load_config()  # data/raw/Food_Delivery_Times.csv exists in the repo
+    """load_data reads and engineers the real CSV, yielding the target column."""
+    cfg = load_config()  # data/raw/laptop_data.csv ships with the repo
     df = load_data(cfg)
     assert cfg.data.target in df.columns
     assert len(df) > 0
 
 
 def test_synthetic_fallback_when_csv_missing():
+    """load_data falls back to synthetic generation when the CSV is absent."""
     cfg = load_config()
     cfg.data.raw_path = "data/raw/__missing__.csv"
     df = load_data(cfg)
@@ -22,12 +24,14 @@ def test_synthetic_fallback_when_csv_missing():
 
 
 def test_validate_schema_raises_on_missing_column():
+    """validate_schema raises ValueError when required columns are missing."""
     cfg = load_config()
     with pytest.raises(ValueError):
         validate_schema(pd.DataFrame({"foo": [1, 2]}), cfg)
 
 
 def test_validate_schema_allows_nulls():
+    """validate_schema tolerates per-cell nulls in an otherwise valid frame."""
     cfg = load_config()
     df = load_data(cfg)
     df.loc[df.index[:5], cfg.data.categorical_features[0]] = None

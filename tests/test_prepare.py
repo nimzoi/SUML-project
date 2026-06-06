@@ -6,6 +6,7 @@ from data.prepare import build_preprocessor, split_data
 
 
 def test_split_shapes_and_columns():
+    """split_data partitions every row and keeps the configured feature columns."""
     cfg = load_config()
     df = load_data(cfg)
     x_train, x_test, y_train, y_test = split_data(df, cfg)
@@ -15,6 +16,7 @@ def test_split_shapes_and_columns():
 
 
 def test_preprocessor_handles_nulls_and_unknown_categories():
+    """The preprocessor fits on train and transforms unseen test rows without error."""
     cfg = load_config()
     df = load_data(cfg)
     x_train, x_test, _, _ = split_data(df, cfg)

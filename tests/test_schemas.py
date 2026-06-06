@@ -7,6 +7,7 @@ from app.schemas import PredictRequest
 
 
 def _valid_payload():
+    """Return a payload that satisfies every PredictRequest field."""
     return {
         "company": "Dell",
         "type_name": "Notebook",
@@ -25,12 +26,14 @@ def _valid_payload():
 
 
 def test_valid_request():
+    """A well-formed payload constructs a PredictRequest with coerced enum values."""
     req = PredictRequest(**_valid_payload())
     assert req.ram_gb == 8
     assert req.cpu_brand.value == "Intel Core i5"
 
 
 def test_invalid_enum_value():
+    """An out-of-enum cpu_brand is rejected with a ValidationError."""
     payload = _valid_payload()
     payload["cpu_brand"] = "Pentium"
     with pytest.raises(ValidationError):
@@ -38,6 +41,7 @@ def test_invalid_enum_value():
 
 
 def test_negative_inches_rejected():
+    """A non-positive inches value violates the gt=0 constraint."""
     payload = _valid_payload()
     payload["inches"] = -1
     with pytest.raises(ValidationError):

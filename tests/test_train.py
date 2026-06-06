@@ -8,6 +8,7 @@ from model.train import train
 
 
 def _fast_config(tmp_path):
+    """Load the real config but with a tiny time budget and a temp artifact dir."""
     cfg = load_config()
     cfg.model.time_budget_s = 5
     cfg.model.artifact_dir = str(tmp_path)
@@ -15,6 +16,7 @@ def _fast_config(tmp_path):
 
 
 def test_train_creates_artifact_and_metrics(tmp_path):
+    """train writes model.joblib + metrics.json and reports sane metric values."""
     cfg = _fast_config(tmp_path)
     report = train(cfg)
     assert cfg.artifact_path.exists()
@@ -26,6 +28,7 @@ def test_train_creates_artifact_and_metrics(tmp_path):
 
 
 def test_saved_pipeline_predicts(tmp_path):
+    """The persisted pipeline predicts a positive price from a raw feature row."""
     cfg = _fast_config(tmp_path)
     train(cfg)
     pipeline = joblib.load(cfg.artifact_path)

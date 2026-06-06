@@ -7,6 +7,8 @@ numeric and categorical features and drops physically invalid rows.
 
 from __future__ import annotations
 
+import re
+
 import pandas as pd
 
 ENGINEERED_COLUMNS = [
@@ -39,11 +41,18 @@ def _cpu_brand(text: str) -> str:
 
 
 def _parse_memory(text: str) -> pd.Series:
-    """Split the raw memory string into total SSD and HDD capacity in GB."""
-    cleaned = str(text).replace("GB", "").replace("TB", "000")
+    """Split the raw memory string into total SSD and HDD capacity in GB.
+
+    Each '+'-separated part looks like ``256GB SSD`` or ``1.0TB HDD``: the size is read
+    as a number and terabytes are converted to gigabytes (x1000), so a decimal ``1.0TB``
+    yields 1000 GB rather than 10000. Flash storage counts as SSD; hybrid drives as HDD.
+    """
     ssd = hdd = 0
-    for part in cleaned.split("+"):
-        amount = int("".join(ch for ch in part if ch.isdigit()) or 0)
+    for part in str(text).split("+"):
+        match = re.search(r"([\d.]+)\s*(TB|GB)", part)
+        if match is None:
+            continue
+        amount = round(float(match.group(1)) * (1000 if match.group(2) == "TB" else 1))
         if "SSD" in part or "Flash" in part:
             ssd += amount
         elif "HDD" in part or "Hybrid" in part:
