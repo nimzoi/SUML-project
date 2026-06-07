@@ -24,9 +24,16 @@ cech używanych przez model:
 | `Gpu` = `"Nvidia GeForce MX150"` | `Gpu_brand` (Intel/Nvidia/AMD) |
 | `OpSys` | `Os` (Windows/Mac/Other) |
 
-Warstwa czyszczenia usuwa kolumnę indeksu oraz rekordy z niepoprawnymi albo niemożliwymi
-do sparsowania wartościami kluczowych cech. Braki komórkowe w dopuszczalnych kolumnach
-są imputowane później w preprocessingu.
+Warstwa czyszczenia usuwa kolumnę indeksu oraz rekordy, dla których nie da się poprawnie
+zbudować kluczowych cech `Ram`, `Weight` albo `ppi`. W praktyce oznacza to, że wartości
+niemożliwe do sparsowania w tych polach nie trafiają już do preprocessingu.
+
+## Braki danych
+
+Braki, które pozostają po warstwie czyszczenia, są obsługiwane w preprocessingu:
+cechy numeryczne są imputowane medianą, a kategoryczne najczęstszą wartością. Ten krok
+chroni trening i predykcję przed pojedynczymi brakami w kolumnach dopuszczonych przez
+schemat, ale nie zastępuje walidacji struktury danych wejściowych.
 
 ## Schemat po przetworzeniu
 
