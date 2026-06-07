@@ -1,42 +1,55 @@
-# Data Card — Laptop Prices
+# Data card — ceny laptopów
 
-## Source
-- Kaggle laptop price dataset (campusx mirror), saved at `data/raw/laptop_data.csv`.
-- 1303 raw rows × 12 columns; target = **Price** (currency: INR, as in the dataset).
-- Committed to the repo for one-command reproducibility.
+## Źródło
 
-When the CSV is absent, `data/synthetic.py` deterministically generates data with the
-**same engineered schema** (seeded), so the pipeline runs anywhere.
+- Dataset Kaggle z cenami laptopów (mirror campusx), zapisany w `data/raw/laptop_data.csv`.
+- 1303 surowe rekordy i 12 kolumn; target: **Price** (waluta: INR, zgodnie ze zbiorem).
+- Plik jest śledzony w repozytorium, żeby projekt dało się uruchomić bez pobierania danych.
 
-## Raw → engineered (the cleaning / feature-engineering layer)
-The raw data stores several fields as messy strings. `data/features.py` parses them:
+Jeśli CSV nie istnieje, `data/synthetic.py` generuje deterministyczny zbiór o tym samym
+schemacie cech modelowych. Dzięki temu pipeline może działać także bez realnego datasetu.
 
-| Raw field | Engineered feature(s) |
-|-----------|-----------------------|
-| `Ram` = "8GB" | `Ram` (int) |
-| `Weight` = "1.37kg" | `Weight` (float) |
-| `ScreenResolution` = "IPS Panel … 1920x1080" | `Touchscreen` (0/1), `Ips` (0/1), `ppi` (float) |
-| `Cpu` = "Intel Core i5 7200U 2.5GHz" | `Cpu_rank` (ordinal tier: i3 < i5 < i7) |
-| `Memory` = "256GB SSD + 1TB HDD" | `SSD` (GB), `HDD` (GB) |
-| `Gpu` = "Nvidia GeForce MX150" | `Gpu_brand` (Intel/Nvidia/AMD) |
+## Surowe dane → cechy modelowe
+
+Surowy zbiór zawiera kilka pól zapisanych jako tekst. `data/features.py` parsuje je do
+cech używanych przez model:
+
+| Pole surowe | Cecha po przetworzeniu |
+|---|---|
+| `Ram` = `"8GB"` | `Ram` (int) |
+| `Weight` = `"1.37kg"` | `Weight` (float) |
+| `ScreenResolution` = `"IPS Panel ... 1920x1080"` | `Touchscreen` (0/1), `Ips` (0/1), `ppi` (float) |
+| `Cpu` = `"Intel Core i5 7200U 2.5GHz"` | `Cpu_rank` (porządek: i3 < i5 < i7) |
+| `Memory` = `"256GB SSD + 1TB HDD"` | `SSD` (GB), `HDD` (GB) |
+| `Gpu` = `"Nvidia GeForce MX150"` | `Gpu_brand` (Intel/Nvidia/AMD) |
 | `OpSys` | `Os` (Windows/Mac/Other) |
 
-It also drops the index column and **drops rows with invalid/missing engineered values**
-(physically impossible or unparseable) — real data cleaning.
+Warstwa czyszczenia usuwa kolumnę indeksu oraz rekordy z niepoprawnymi albo niemożliwymi
+do sparsowania wartościami kluczowych cech. Braki komórkowe w dopuszczalnych kolumnach
+są imputowane później w preprocessingu.
 
-## Engineered schema (target = `Price`)
-- **Numeric:** `Ram`, `Weight`, `Inches`, `ppi`, `SSD`, `HDD`, `Touchscreen`, `Ips`, `Cpu_rank`
-- **Categorical:** `Company`, `TypeName`, `Gpu_brand`, `Os`
+## Schemat po przetworzeniu
 
-## Target distribution
-![Price distribution](img/target_hist.png)
+Target: `Price`
 
-## Top numeric feature vs price
-![RAM vs price](img/feature_scatter.png)
+- **Cechy numeryczne:** `Ram`, `Weight`, `Inches`, `ppi`, `SSD`, `HDD`, `Touchscreen`,
+  `Ips`, `Cpu_rank`
+- **Cechy kategoryczne:** `Company`, `TypeName`, `Gpu_brand`, `Os`
 
-## Baseline model
-FLAML AutoML (single LightGBM with **monotone constraints**) and a **log-target** on a 20%
-holdout: **MAE ≈ 9 400 · RMSE ≈ 14 700 · R² ≈ 0.85** on the original price scale
-(≈ 0.88 measured on log-price). Top features (permutation importance): RAM, SSD, laptop
-type, CPU tier. Live values are written to `model/artifacts/metrics.json` and served at
-`GET /model-info`.
+## Rozkład targetu
+
+![Rozkład ceny](img/target_hist.png)
+
+## Wybrana cecha numeryczna względem ceny
+
+![RAM względem ceny](img/feature_scatter.png)
+
+## Baseline modelu
+
+Model bazowy to FLAML AutoML z LightGBM, ograniczeniami monotonicznymi i log-transformacją
+targetu. Na 20% holdoucie uzyskuje orientacyjnie **MAE ≈ 9 400**, **RMSE ≈ 14 700** i
+**R² ≈ 0.85** na oryginalnej skali ceny (około 0.88 na skali logarytmicznej).
+
+Najważniejsze cechy według permutation importance to zwykle RAM, SSD, typ laptopa i poziom
+CPU. Aktualne wartości metryk są zapisywane w `model/artifacts/metrics.json` i dostępne
+przez `GET /model-info`.

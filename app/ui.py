@@ -1,8 +1,8 @@
-"""Interfejs Streamlit do wyceny laptopa.
+"""Streamlit interface for laptop price estimation.
 
-Dwa tryby, ten sam kod: woła usługę FastAPI, a gdy API jest niedostępne, ładuje model
-bezpośrednio i liczy w procesie. Dzięki temu ta sama aplikacja działa też samodzielnie
-na Streamlit Community Cloud (gdzie hostowany jest tylko proces Streamlit).
+The same UI works in two modes: it calls the FastAPI service when available, otherwise
+it loads the model directly and predicts in-process. This keeps the app deployable on
+Streamlit Community Cloud, where only the Streamlit process is hosted.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from model.train import train
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 REQUEST_TIMEOUT = 10
-PLN_PER_INR = 0.045  # kurs orientacyjny, tylko do poglądowego przeliczenia
+PLN_PER_INR = 0.045  # Approximate rate, used only for indicative conversion.
 DATA_NOTE = (
     "Model wytrenowano na publicznym zbiorze Kaggle (rynek indyjski, ok. 2017 r.). "
     "Ceny w INR przeliczane na PLN po kursie orientacyjnym — traktuj wynik jako wycenę "
@@ -110,7 +110,7 @@ PRESETS = {
 
 @st.cache_resource(show_spinner="Ładowanie modelu...")
 def _local_model():
-    """Załaduj artefakt modelu, trenując go raz, jeśli go brakuje (tryb standalone)."""
+    """Load the model artifact, training it once if missing in standalone mode."""
     config = load_config()
     if not config.artifact_path.exists():
         train(config)
@@ -118,7 +118,7 @@ def _local_model():
 
 
 def get_prediction(request: PredictRequest):
-    """Zwróć (cena, źródło): najpierw API, w razie braku — model lokalny."""
+    """Return (price, source): API first, local model fallback if unavailable."""
     try:
         response = requests.post(
             f"{API_URL}/predict", json=request.model_dump(mode="json"), timeout=REQUEST_TIMEOUT
@@ -130,7 +130,7 @@ def get_prediction(request: PredictRequest):
 
 
 def get_model_info() -> dict:
-    """Zwróć metryki/metadane modelu z API lub z lokalnego pliku metryk."""
+    """Return model metrics/metadata from the API or the local metrics file."""
     try:
         return requests.get(f"{API_URL}/model-info", timeout=REQUEST_TIMEOUT).json()
     except requests.RequestException:
@@ -142,23 +142,23 @@ def get_model_info() -> dict:
 
 
 def _money(value: float) -> str:
-    """Sformatuj kwotę ze spacją jako separatorem tysięcy."""
+    """Format an amount with a space as the thousands separator."""
     return f"{value:,.0f}".replace(",", " ")
 
 
 def _pln(inr: float) -> str:
-    """Przelicz kwotę z INR na PLN i sformatuj do wyświetlenia."""
+    """Convert INR to PLN and format the result for display."""
     return _money(inr * PLN_PER_INR)
 
 
 def _init_defaults() -> None:
-    """Wstaw domyślne wartości formularza do session_state (raz, jeśli ich brak)."""
+    """Seed session_state with default form values once if they are missing."""
     for key, value in DEFAULTS.items():
         st.session_state.setdefault(key, value)
 
 
 def _apply_preset() -> None:
-    """Wypełnij formularz wartościami wybranego presetu (callback selektora)."""
+    """Fill the form with the selected preset values from the selector callback."""
     preset = PRESETS.get(st.session_state.get("preset"))
     if preset:
         for key, value in preset.items():
@@ -166,7 +166,7 @@ def _apply_preset() -> None:
 
 
 def _render_explanation(request: PredictRequest) -> None:
-    """Pokaż wpływ poszczególnych cech na cenę względem laptopa bazowego (w PLN)."""
+    """Render feature contributions against the baseline laptop in PLN."""
     contributions = explain_prediction(_local_model(), request)[:6]
     if not contributions:
         return
@@ -175,14 +175,14 @@ def _render_explanation(request: PredictRequest) -> None:
 
 
 def _render_sensitivity(request: PredictRequest) -> None:
-    """Pokaż, jak zmienia się cena wraz z ilością RAM (reszta parametrów bez zmian)."""
+    """Render RAM sensitivity while keeping the remaining parameters fixed."""
     prices = price_sensitivity(_local_model(), request, "ram_gb", RAM_OPTIONS)
     st.markdown("**📈 Co jeśli więcej RAM? Szacowana cena wg RAM (PLN):**")
     st.bar_chart({f"{ram} GB": round(price * PLN_PER_INR) for ram, price in prices.items()})
 
 
 def _build_form() -> PredictRequest:  # pylint: disable=too-many-locals
-    """Wyrenderuj formularz specyfikacji i zwróć zwalidowany PredictRequest."""
+    """Render the specification form and return a validated PredictRequest."""
     st.selectbox("Przykładowa konfiguracja", list(PRESETS), key="preset", on_change=_apply_preset)
 
     col1, col2 = st.columns(2)
@@ -226,7 +226,7 @@ def _build_form() -> PredictRequest:  # pylint: disable=too-many-locals
 
 
 def _render_result(request: PredictRequest) -> None:
-    """Policz cenę (z przedziałem), a pod nią pokaż wyjaśnienie i scenariusz RAM."""
+    """Calculate price with a band, then render explanation and RAM scenario."""
     try:
         price, source = get_prediction(request)
         info = get_model_info()
@@ -244,7 +244,7 @@ def _render_result(request: PredictRequest) -> None:
 
 
 def main() -> None:
-    """Wyrenderuj stronę: formularz, wycenę z przedziałem oraz panele informacyjne."""
+    """Render the page: form, price estimate with band and information panels."""
     st.set_page_config(page_title="Wycena laptopa", page_icon="💻")
     st.title("💻 Wycena laptopa")
     st.caption(

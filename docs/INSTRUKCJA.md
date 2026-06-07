@@ -99,8 +99,6 @@ Model można dotrenować na świeższych danych **bez zmian w kodzie**:
 2. Uruchom `python -m model.train`.
 3. Pliki `model/artifacts/model.joblib` i `metrics.json` zostaną przebudowane; aplikacja
    użyje nowego modelu po restarcie.
-4. **Zacommituj** przebudowane pliki (są śledzone w repo), żeby cała grupa miała aktualny
-   model bez ponownego trenowania.
 
 > **Uwaga:** warstwa czyszczenia danych (`data/features.py`) jest dopasowana do powyższego
 > schematu kolumn. Zbiór o innym układzie kolumn wymaga dostosowania `data/features.py`.
@@ -122,7 +120,7 @@ w pliku `config.yaml` — to jedyne źródło konfiguracji.
 
 ---
 
-## Weryfikacja jakości (dla oceniającego)
+## Weryfikacja jakości
 
 ```bash
 make test     # testy (pytest)         — lub: pytest
