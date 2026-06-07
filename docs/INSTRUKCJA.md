@@ -75,7 +75,8 @@ Aplikacja działa też samodzielnie w chmurze (UI ładuje model bezpośrednio, g
 1. Wybierz **gotowy preset** (np. „Gamingowy") albo wpisz własną specyfikację.
 2. Kliknij **„Oszacuj cenę"**.
 3. Zobaczysz: szacowaną **cenę w PLN z przedziałem**, panel **„Dlaczego ta cena?"**
-   (wpływ poszczególnych cech) oraz wykres **„Co jeśli więcej RAM?"**.
+   (wpływ poszczególnych cech), wykres **„Co jeśli więcej RAM?"** oraz panel
+   **„Monitoring danych"** z raportem driftu aktualnego datasetu.
 
 Wycena przez API (`POST /predict`):
 
@@ -86,6 +87,11 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -
   \"cpu_brand\": \"Intel Core i5\", \"ssd_gb\": 256, \"hdd_gb\": 0,
   \"gpu_brand\": \"Intel\", \"os\": \"Windows\" }"
 ```
+
+API obsługuje też predykcje wsadowe przez `POST /predict-batch`, wyjaśnienia przez
+`POST /explain` oraz endpointy operacyjne `GET /data-schema` i `GET /data-drift`.
+Pierwszy pokazuje wymagane kolumny CSV, cechy modelowe i bramki walidacji, a drugi
+porównuje aktualny dataset z profilem zapisanym przy treningu.
 
 ---
 
@@ -108,6 +114,29 @@ w pliku `config.yaml` — to jedyne źródło konfiguracji.
 
 ---
 
+## Retrening przez API i walidacja
+
+FastAPI ma interaktywną dokumentację Swagger pod http://localhost:8000/docs. Operacyjny
+pipeline retreningu jest dostępny z API:
+
+```bash
+curl -X POST http://localhost:8000/validate-data
+curl -X GET http://localhost:8000/data-drift
+curl -X POST http://localhost:8000/retrain -H "Content-Type: application/json" -d "{}"
+```
+
+`POST /validate-data` sprawdza aktualny dataset bez trenowania modelu. Dane tabelaryczne
+są walidowane przez Pandera, a konfiguracja i payloady API przez Pydantic. `GET /data-drift`
+porównuje aktualny dataset z profilem zapisanym w `metrics.json`; jeśli podmienione dane
+mają wyraźnie inne średnie lub rozkłady kategorii, raport wskaże cechy przekraczające progi.
+`POST /retrain` uruchamia job w tle: dane są walidowane, model trenuje się w katalogu
+tymczasowym, a artefakty są podmieniane dopiero po przejściu bramek jakości z sekcji
+`validation` w `config.yaml`. Status sprawdzisz przez `GET /retrain/{job_id}`. Jeśli
+aplikacja działa publicznie, ustaw `RETRAIN_API_KEY`; wtedy wywołanie retreningu wymaga
+nagłówka `X-API-Key`.
+
+---
+
 ## Rozwiązywanie problemów
 
 | Problem | Rozwiązanie |
@@ -126,7 +155,10 @@ w pliku `config.yaml` — to jedyne źródło konfiguracji.
 make test     # testy (pytest)         — lub: pytest
 make lint     # pylint (>= 8; obecnie 10.00/10)
 make format   # formatowanie (black + isort)
+make validate # walidacja konfiguracji i danych
 ```
 
-CI (GitHub Actions) uruchamia `pylint` i `pytest` przy każdym push i pull requeście.
+CI/CD (GitHub Actions) waliduje konfigurację, uruchamia `pylint` i `pytest` przy każdym
+pushu i pull requeście. Po pushu do `main` buduje obraz Dockera i publikuje go do GitHub
+Container Registry.
 Pełny opis architektury i danych: [README.md](../README.md) oraz [data_card.md](data_card.md).

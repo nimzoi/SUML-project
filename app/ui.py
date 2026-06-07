@@ -18,6 +18,9 @@ from app.explain import explain_prediction, price_band, price_sensitivity
 from app.inference import predict_price
 from app.schemas import Company, CpuBrand, GpuBrand, Os, PredictRequest, TypeName
 from config import load_config
+from data.load import load_data
+from data.monitoring import build_data_profile, compare_data_profiles
+from model.schemas import DataProfile
 from model.train import train
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
@@ -141,6 +144,24 @@ def get_model_info() -> dict:
         return {}
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def get_data_drift() -> dict:
+    """Return a data-drift report from the API or compute it locally in standalone mode."""
+    try:
+        response = requests.get(f"{API_URL}/data-drift", timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException:
+        config = load_config()
+        current_profile = build_data_profile(load_data(config), config)
+        info = get_model_info()
+        reference_profile = current_profile
+        if info.get("data_profile"):
+            reference_profile = DataProfile(**info["data_profile"])
+        report = compare_data_profiles(reference_profile, current_profile)
+        return report.model_dump()
+
+
 def _money(value: float) -> str:
     """Format an amount with a space as the thousands separator."""
     return f"{value:,.0f}".replace(",", " ")
@@ -179,6 +200,34 @@ def _render_sensitivity(request: PredictRequest) -> None:
     prices = price_sensitivity(_local_model(), request, "ram_gb", RAM_OPTIONS)
     st.markdown("**📈 Co jeśli więcej RAM? Szacowana cena wg RAM (PLN):**")
     st.bar_chart({f"{ram} GB": round(price * PLN_PER_INR) for ram, price in prices.items()})
+
+
+def _render_drift_report() -> None:
+    """Render current training-data drift against the stored reference profile."""
+    report = get_data_drift()
+    status = "OK" if report.get("ok") else "Wykryto drift"
+    st.write(
+        {
+            "Status": status,
+            "Cechy z driftem": report.get("drifted_features", 0),
+            "Rekordy referencyjne": report.get("reference_rows", 0),
+            "Rekordy aktualne": report.get("current_rows", 0),
+        }
+    )
+    features = report.get("features", [])
+    if features:
+        rows = [
+            {
+                "Cecha": item["feature"],
+                "Typ": "numeryczna" if item["kind"] == "numeric" else "kategoryczna",
+                "Score": item["score"],
+                "Próg": item["threshold"],
+                "Drift": "tak" if item["drifted"] else "nie",
+            }
+            for item in features[:8]
+        ]
+        st.dataframe(rows, hide_index=True, use_container_width=True)
+    st.caption(report.get("detail", ""))
 
 
 def _build_form() -> PredictRequest:  # pylint: disable=too-many-locals
@@ -279,6 +328,9 @@ def main() -> None:
                 st.bar_chart(info["feature_importance"])
         else:
             st.warning("Informacje o modelu są chwilowo niedostępne.")
+
+    with st.expander("🩺 Monitoring danych"):
+        _render_drift_report()
 
 
 if __name__ == "__main__":

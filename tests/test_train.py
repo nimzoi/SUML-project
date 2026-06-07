@@ -25,6 +25,8 @@ def test_train_creates_artifact_and_metrics(tmp_path):
     assert report.r2 <= 1.0
     assert report.data_source in {"real", "synthetic"}
     assert report.best_estimator
+    assert report.data_profile is not None
+    assert report.data_profile.n_rows > 0
 
 
 def test_saved_pipeline_predicts(tmp_path):

@@ -3,7 +3,14 @@
 import pytest
 from pydantic import ValidationError
 
-from config import AppConfig, DataConfig, ModelConfig, SyntheticConfig, load_config
+from config import (
+    AppConfig,
+    DataConfig,
+    ModelConfig,
+    SyntheticConfig,
+    ValidationConfig,
+    load_config,
+)
 
 
 def test_load_config_returns_appconfig():
@@ -50,3 +57,9 @@ def test_rejects_unknown_metric():
     """An unsupported AutoML metric is rejected by the Literal constraint."""
     with pytest.raises(ValidationError):
         ModelConfig(metric="banana")
+
+
+def test_rejects_invalid_validation_gate():
+    """Validation gates reject impossible threshold values."""
+    with pytest.raises(ValidationError):
+        ValidationConfig(min_rows=0)

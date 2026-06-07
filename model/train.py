@@ -17,6 +17,7 @@ from sklearn.pipeline import Pipeline
 
 from config import AppConfig, load_config
 from data.load import load_data
+from data.monitoring import build_data_profile
 from data.prepare import build_preprocessor, split_data
 from model.evaluate import regression_metrics
 from model.schemas import ModelInfo
@@ -77,6 +78,7 @@ def train(config: AppConfig) -> ModelInfo:  # pylint: disable=too-many-locals
         feature_columns=config.feature_columns,
         target=config.data.target,
         feature_importance=_feature_importance(pipeline, x_test, y_test, config.model.seed),
+        data_profile=build_data_profile(df, config),
     )
 
     Path(config.model.artifact_dir).mkdir(parents=True, exist_ok=True)
