@@ -40,6 +40,15 @@ model:
   artifact_name: model.joblib
   metrics_name: metrics.json
   seed: 42
+validation:
+  min_rows: 100
+  min_r2: 0.7
+  max_mae: 25000
+tracking:
+  mlflow:
+    enabled: true
+    tracking_uri: mlruns
+    experiment_name: laptop-price-automl
 api:
   host: 0.0.0.0
   port: 8000

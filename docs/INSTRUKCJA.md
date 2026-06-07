@@ -9,6 +9,21 @@ zera do działającej aplikacji — bez konieczności konfigurowania czegokolwie
 
 ---
 
+## Jak czytać ten system
+
+Najprostszy obraz projektu jest taki: to narzędzie do operacyjnej wyceny laptopów, a nie sam
+model regresyjny. Osoba biznesowa może użyć UI do sprawdzenia pojedynczej oferty albo całej
+partii sprzętu z CSV. Osoba techniczna może użyć API, żeby podłączyć tę samą predykcję do
+innego systemu. Osoba odpowiedzialna za model widzi metryki, drift danych, retraining i runy
+MLflow, czyli elementy potrzebne do utrzymania modelu po pierwszym wdrożeniu.
+
+W praktyce przepływ wygląda tak: specyfikacja laptopa trafia do UI albo API, payload jest
+walidowany, model zwraca cenę, a system pokazuje przedział typowego błędu i wpływ cech. Gdy
+pojawią się nowe dane, można najpierw sprawdzić ich schemat i drift, a dopiero potem uruchomić
+retraining. Nowy artefakt jest promowany tylko wtedy, gdy przejdzie bramki jakości.
+
+---
+
 ## Wariant A — Docker (najprostszy, zalecany)
 
 **Czego potrzebujesz:** tylko [Docker Desktop](https://www.docker.com/products/docker-desktop/)
@@ -27,6 +42,22 @@ Po zbudowaniu (model trenuje się automatycznie podczas budowy obrazu, ~1 min) o
 - **API + interaktywna dokumentacja:** http://localhost:8000/docs
 
 Aby zatrzymać: `Ctrl+C`, a następnie `docker compose down`.
+
+---
+
+## Co działa na którym porcie
+
+| Usługa | Adres | Rola w procesie |
+|---|---|---|
+| Streamlit UI | http://localhost:8501 | Panel operacyjny dla użytkownika: wycena, CSV, eksport, wykresy, monitoring |
+| FastAPI | http://localhost:8000 | Warstwa integracyjna dla innych aplikacji i procesów batch |
+| Swagger UI | http://localhost:8000/docs | Testowanie API i walidacji payloadów bez pisania klienta |
+| ReDoc | http://localhost:8000/redoc | Czytelna specyfikacja kontraktów API |
+| MLflow UI | http://127.0.0.1:5000 | Historia eksperymentów, metryk i artefaktów modelu po `make mlflow` |
+
+W standardowym uruchomieniu Docker Compose startuje UI i API. MLflow UI jest opcjonalne:
+runy zapisują się przy treningu w `mlruns/`, a panel uruchamiasz tylko wtedy, gdy chcesz je
+obejrzeć.
 
 ---
 
@@ -75,7 +106,10 @@ Aplikacja działa też samodzielnie w chmurze (UI ładuje model bezpośrednio, g
 1. Wybierz **gotowy preset** (np. „Gamingowy") albo wpisz własną specyfikację.
 2. Kliknij **„Oszacuj cenę"**.
 3. Zobaczysz: szacowaną **cenę w PLN z przedziałem**, panel **„Dlaczego ta cena?"**
-   (wpływ poszczególnych cech) oraz wykres **„Co jeśli więcej RAM?"**.
+   (wpływ poszczególnych cech), wykres **„Co jeśli więcej RAM?"** oraz panel
+   **„Monitoring danych"** z raportem driftu aktualnego datasetu.
+4. W panelu **„Wycena wsadowa CSV"** możesz pobrać przykładowy plik, wgrać listę laptopów,
+   policzyć ceny hurtowo i pobrać wynikowy CSV z ceną oraz przedziałem błędu.
 
 Wycena przez API (`POST /predict`):
 
@@ -86,6 +120,26 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -
   \"cpu_brand\": \"Intel Core i5\", \"ssd_gb\": 256, \"hdd_gb\": 0,
   \"gpu_brand\": \"Intel\", \"os\": \"Windows\" }"
 ```
+
+API obsługuje też predykcje wsadowe przez `POST /predict-batch`, wyjaśnienia przez
+`POST /explain` oraz endpointy operacyjne `GET /data-schema` i `GET /data-drift`.
+Pierwszy pokazuje wymagane kolumny CSV, cechy modelowe i bramki walidacji, a drugi
+porównuje aktualny dataset z profilem zapisanym przy treningu.
+
+Pełna mapa endpointów:
+
+| Endpoint | Po co istnieje w procesie |
+|---|---|
+| `GET /health` | monitoring, czy usługa predykcyjna jest gotowa do pracy |
+| `POST /predict` | szybka wycena jednej oferty |
+| `POST /explain` | uzasadnienie wyceny i pokazanie wpływu cech |
+| `POST /predict-batch` | automatyczna wycena większej partii laptopów |
+| `GET /model-info` | audyt aktualnego modelu: metryki, data treningu, MLflow run |
+| `GET /data-schema` | kontrakt dla osoby przygotowującej nowy plik danych |
+| `GET /data-drift` | kontrola, czy nowe dane są podobne do danych użytych w treningu |
+| `POST /validate-data` | sprawdzenie datasetu przed retrainingiem |
+| `POST /retrain` | bezpieczne uruchomienie nowego treningu w tle |
+| `GET /retrain/{job_id}` | śledzenie, czy retraining przeszedł walidację i promocję artefaktu |
 
 ---
 
@@ -105,6 +159,38 @@ Model można dotrenować na świeższych danych **bez zmian w kodzie**:
 
 Parametry treningu (budżet czasu AutoML, lista estymatorów, metryka itd.) zmienia się
 w pliku `config.yaml` — to jedyne źródło konfiguracji.
+
+Jeśli `tracking.mlflow.enabled` jest ustawione na `true`, trening zapisuje run w lokalnym
+katalogu `mlruns/`. Panel eksperymentów uruchomisz komendą:
+
+```bash
+mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+```
+
+W projekcie z `make` można użyć skrótu `make mlflow`.
+
+---
+
+## Retrening przez API i walidacja
+
+FastAPI ma interaktywną dokumentację Swagger pod http://localhost:8000/docs. Operacyjny
+pipeline retreningu jest dostępny z API:
+
+```bash
+curl -X POST http://localhost:8000/validate-data
+curl -X GET http://localhost:8000/data-drift
+curl -X POST http://localhost:8000/retrain -H "Content-Type: application/json" -d "{}"
+```
+
+`POST /validate-data` sprawdza aktualny dataset bez trenowania modelu. Dane tabelaryczne
+są walidowane przez Pandera, a konfiguracja i payloady API przez Pydantic. `GET /data-drift`
+porównuje aktualny dataset z profilem zapisanym w `metrics.json`; jeśli podmienione dane
+mają wyraźnie inne średnie lub rozkłady kategorii, raport wskaże cechy przekraczające progi.
+`POST /retrain` uruchamia job w tle: dane są walidowane, model trenuje się w katalogu
+tymczasowym, a artefakty są podmieniane dopiero po przejściu bramek jakości z sekcji
+`validation` w `config.yaml`. Status sprawdzisz przez `GET /retrain/{job_id}`. Jeśli
+aplikacja działa publicznie, ustaw `RETRAIN_API_KEY`; wtedy wywołanie retreningu wymaga
+nagłówka `X-API-Key`.
 
 ---
 
@@ -126,7 +212,11 @@ w pliku `config.yaml` — to jedyne źródło konfiguracji.
 make test     # testy (pytest)         — lub: pytest
 make lint     # pylint (>= 8; obecnie 10.00/10)
 make format   # formatowanie (black + isort)
+make validate # walidacja konfiguracji i danych
+make mlflow   # lokalny panel MLflow
 ```
 
-CI (GitHub Actions) uruchamia `pylint` i `pytest` przy każdym push i pull requeście.
+CI/CD (GitHub Actions) waliduje konfigurację, uruchamia `pylint` i `pytest` przy każdym
+pushu i pull requeście. Po pushu do `main` buduje obraz Dockera i publikuje go do GitHub
+Container Registry.
 Pełny opis architektury i danych: [README.md](../README.md) oraz [data_card.md](data_card.md).

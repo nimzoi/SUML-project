@@ -3,7 +3,7 @@
   "rmse": 14793.3166,
   "r2": 0.8468,
   "best_estimator": "lgbm",
-  "training_date": "2026-06-06T10:48:15.275220+00:00",
+  "training_date": "2026-06-07T14:17:24.763353+00:00",
   "n_rows": 1302,
   "data_source": "real",
   "feature_columns": [
@@ -36,5 +36,126 @@
     "Os": 0.0114,
     "HDD": 0.0077,
     "Touchscreen": 0.0036
-  }
+  },
+  "data_profile": {
+    "n_rows": 1302,
+    "numeric": {
+      "Ram": {
+        "mean": 8.3856,
+        "std": 5.0832,
+        "min": 2.0,
+        "max": 64.0,
+        "missing_rate": 0.0
+      },
+      "Weight": {
+        "mean": 2.0394,
+        "std": 0.665,
+        "min": 0.69,
+        "max": 4.7,
+        "missing_rate": 0.0
+      },
+      "Inches": {
+        "mean": 15.0193,
+        "std": 1.4243,
+        "min": 10.1,
+        "max": 18.4,
+        "missing_rate": 0.0
+      },
+      "ppi": {
+        "mean": 146.5671,
+        "std": 43.0525,
+        "min": 90.58,
+        "max": 352.47,
+        "missing_rate": 0.0
+      },
+      "SSD": {
+        "mean": 188.4086,
+        "std": 184.8757,
+        "min": 0.0,
+        "max": 1024.0,
+        "missing_rate": 0.0
+      },
+      "HDD": {
+        "mean": 422.9401,
+        "std": 516.9002,
+        "min": 0.0,
+        "max": 2000.0,
+        "missing_rate": 0.0
+      },
+      "Touchscreen": {
+        "mean": 0.1467,
+        "std": 0.3538,
+        "min": 0.0,
+        "max": 1.0,
+        "missing_rate": 0.0
+      },
+      "Ips": {
+        "mean": 0.2796,
+        "std": 0.4488,
+        "min": 0.0,
+        "max": 1.0,
+        "missing_rate": 0.0
+      },
+      "Cpu_rank": {
+        "mean": 2.0161,
+        "std": 1.0147,
+        "min": 0.0,
+        "max": 3.0,
+        "missing_rate": 0.0
+      }
+    },
+    "categorical": {
+      "Company": {
+        "frequencies": {
+          "Dell": 0.2281,
+          "Lenovo": 0.2281,
+          "HP": 0.2104,
+          "Asus": 0.1214,
+          "Acer": 0.0791,
+          "MSI": 0.0415,
+          "Toshiba": 0.0369,
+          "Apple": 0.0161,
+          "Samsung": 0.0061,
+          "Mediacom": 0.0054,
+          "Razer": 0.0054,
+          "Microsoft": 0.0046,
+          "__OTHER__": 0.0169
+        },
+        "missing_rate": 0.0,
+        "unique_count": 19
+      },
+      "TypeName": {
+        "frequencies": {
+          "Notebook": 0.5584,
+          "Gaming": 0.1575,
+          "Ultrabook": 0.1505,
+          "2 in 1 Convertible": 0.0922,
+          "Workstation": 0.0223,
+          "Netbook": 0.0192
+        },
+        "missing_rate": 0.0,
+        "unique_count": 6
+      },
+      "Gpu_brand": {
+        "frequencies": {
+          "Intel": 0.5545,
+          "Nvidia": 0.3072,
+          "AMD": 0.1382
+        },
+        "missing_rate": 0.0,
+        "unique_count": 3
+      },
+      "Os": {
+        "frequencies": {
+          "Windows": 0.8641,
+          "Other": 0.1198,
+          "Mac": 0.0161
+        },
+        "missing_rate": 0.0,
+        "unique_count": 3
+      }
+    }
+  },
+  "mlflow_run_id": "92b56b7d88bb41a7ad3bf8acab12f2ad",
+  "mlflow_tracking_uri": "file:///D:/SUML-project/mlruns"
 }

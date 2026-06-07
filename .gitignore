@@ -226,6 +226,7 @@ model/artifacts/*
 !model/artifacts/.gitkeep
 !model/artifacts/model.joblib
 !model/artifacts/metrics.json
+mlruns/
 
 # IDE and tooling (not part of the deliverable)
 .idea/

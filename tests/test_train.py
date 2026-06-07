@@ -12,6 +12,7 @@ def _fast_config(tmp_path):
     cfg = load_config()
     cfg.model.time_budget_s = 5
     cfg.model.artifact_dir = str(tmp_path)
+    cfg.tracking.mlflow.enabled = False
     return cfg
 
 
@@ -25,6 +26,23 @@ def test_train_creates_artifact_and_metrics(tmp_path):
     assert report.r2 <= 1.0
     assert report.data_source in {"real", "synthetic"}
     assert report.best_estimator
+    assert report.data_profile is not None
+    assert report.data_profile.n_rows > 0
+
+
+def test_train_persists_mlflow_metadata_when_tracking_logs(tmp_path, monkeypatch):
+    """train stores returned MLflow metadata in the persisted model report."""
+    import model.train as train_module
+
+    cfg = _fast_config(tmp_path)
+    cfg.tracking.mlflow.enabled = True
+
+    def _fake_log_training_run(config, report):
+        return {"mlflow_run_id": "run-123", "mlflow_tracking_uri": "file:///tmp/mlruns"}
+
+    monkeypatch.setattr(train_module, "log_training_run", _fake_log_training_run)
+    report = train(cfg)
+    assert report.mlflow_run_id == "run-123"
 
 
 def test_saved_pipeline_predicts(tmp_path):

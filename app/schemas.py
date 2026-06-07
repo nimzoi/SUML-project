@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
+from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
+
+from model.schemas import RetrainingResult
 
 
 class Company(str, Enum):
@@ -92,8 +96,82 @@ class PredictResponse(BaseModel):
     price: float
 
 
+class PriceBandResponse(BaseModel):
+    """Typical-error interval around a point prediction."""
+
+    low: float
+    high: float
+
+
+class ContributionResponse(BaseModel):
+    """Feature contribution in original price units."""
+
+    label: str
+    amount: float
+
+
+class SensitivityPoint(BaseModel):
+    """Predicted price for one counterfactual feature value."""
+
+    value: Union[int, float, str]
+    price: float
+
+
+class ExplainResponse(BaseModel):
+    """Prediction with local explanations and a simple counterfactual sensitivity curve."""
+
+    price: float
+    typical_error: float
+    band: PriceBandResponse
+    contributions: List[ContributionResponse]
+    sensitivity_field: str
+    sensitivity: List[SensitivityPoint]
+
+
+class BatchPredictRequest(BaseModel):
+    """Multiple laptop configurations for one batch prediction call."""
+
+    items: List[PredictRequest] = Field(..., min_length=1, max_length=100)
+
+
+class BatchPredictResponse(BaseModel):
+    """Predicted laptop prices for a batch request."""
+
+    prices: List[float]
+
+
 class HealthResponse(BaseModel):
     """Liveness and model-loaded status."""
 
     status: str
     model_loaded: bool
+
+
+class DataSchemaResponse(BaseModel):
+    """Human-readable data and validation contract exposed by the API."""
+
+    raw_required_columns: List[str]
+    feature_columns: List[str]
+    numeric_features: List[str]
+    categorical_features: List[str]
+    target: str
+    validation_gates: Dict[str, Union[int, float, None]]
+
+
+class RetrainRequest(BaseModel):
+    """Optional overrides for one API-triggered retraining run."""
+
+    time_budget_s: Optional[int] = Field(None, ge=1, le=600, examples=[60])
+    min_r2: Optional[float] = Field(None, le=1.0, examples=[0.7])
+    max_mae: Optional[float] = Field(None, gt=0, examples=[25000])
+
+
+class RetrainJobStatus(BaseModel):
+    """In-memory status of a retraining job started through the API."""
+
+    job_id: str
+    status: Literal["queued", "running", "succeeded", "failed"]
+    detail: str
+    started_at: datetime
+    finished_at: Optional[datetime] = None
+    result: Optional[RetrainingResult] = None

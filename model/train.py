@@ -17,9 +17,11 @@ from sklearn.pipeline import Pipeline
 
 from config import AppConfig, load_config
 from data.load import load_data
+from data.monitoring import build_data_profile
 from data.prepare import build_preprocessor, split_data
 from model.evaluate import regression_metrics
 from model.schemas import ModelInfo
+from model.tracking import log_training_run
 
 logger = logging.getLogger(__name__)
 
@@ -77,10 +79,14 @@ def train(config: AppConfig) -> ModelInfo:  # pylint: disable=too-many-locals
         feature_columns=config.feature_columns,
         target=config.data.target,
         feature_importance=_feature_importance(pipeline, x_test, y_test, config.model.seed),
+        data_profile=build_data_profile(df, config),
     )
 
     Path(config.model.artifact_dir).mkdir(parents=True, exist_ok=True)
     joblib.dump(pipeline, config.artifact_path)
+    mlflow_info = log_training_run(config, report)
+    if mlflow_info:
+        report = report.model_copy(update=mlflow_info)
     with config.metrics_path.open("w", encoding="utf-8") as handle:
         json.dump(report.model_dump(), handle, indent=2)
     logger.info("Saved model to %s | metrics=%s", config.artifact_path, metrics.model_dump())

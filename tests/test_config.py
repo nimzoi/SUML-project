@@ -3,7 +3,15 @@
 import pytest
 from pydantic import ValidationError
 
-from config import AppConfig, DataConfig, ModelConfig, SyntheticConfig, load_config
+from config import (
+    AppConfig,
+    DataConfig,
+    ModelConfig,
+    SyntheticConfig,
+    TrackingConfig,
+    ValidationConfig,
+    load_config,
+)
 
 
 def test_load_config_returns_appconfig():
@@ -25,6 +33,14 @@ def test_artifact_and_metrics_paths():
     cfg = load_config()
     assert cfg.artifact_path.name == "model.joblib"
     assert cfg.metrics_path.name == "metrics.json"
+
+
+def test_tracking_config_has_mlflow_defaults():
+    """Tracking config exposes optional local MLflow settings."""
+    cfg = load_config()
+    assert isinstance(cfg.tracking, TrackingConfig)
+    assert cfg.tracking.mlflow.enabled is True
+    assert cfg.tracking.mlflow.experiment_name
 
 
 def test_missing_file_raises():
@@ -50,3 +66,9 @@ def test_rejects_unknown_metric():
     """An unsupported AutoML metric is rejected by the Literal constraint."""
     with pytest.raises(ValidationError):
         ModelConfig(metric="banana")
+
+
+def test_rejects_invalid_validation_gate():
+    """Validation gates reject impossible threshold values."""
+    with pytest.raises(ValidationError):
+        ValidationConfig(min_rows=0)

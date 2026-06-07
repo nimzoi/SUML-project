@@ -24,6 +24,9 @@ cech używanych przez model:
 | `Gpu` = `"Nvidia GeForce MX150"` | `Gpu_brand` (Intel/Nvidia/AMD) |
 | `OpSys` | `Os` (Windows/Mac/Other) |
 
+Przed tym krokiem surowy CSV przechodzi walidację Pandera (`data/contracts.py`): wymagane
+są m.in. kolumny źródłowe, dodatnia przekątna ekranu i dodatni target `Price`.
+
 Warstwa czyszczenia usuwa kolumnę indeksu oraz rekordy, dla których nie da się poprawnie
 zbudować kluczowych cech `Ram`, `Weight` albo `ppi`. W praktyce oznacza to, że wartości
 niemożliwe do sparsowania w tych polach nie trafiają już do preprocessingu.
@@ -33,7 +36,8 @@ niemożliwe do sparsowania w tych polach nie trafiają już do preprocessingu.
 Braki, które pozostają po warstwie czyszczenia, są obsługiwane w preprocessingu:
 cechy numeryczne są imputowane medianą, a kategoryczne najczęstszą wartością. Ten krok
 chroni trening i predykcję przed pojedynczymi brakami w kolumnach dopuszczonych przez
-schemat, ale nie zastępuje walidacji struktury danych wejściowych.
+schemat, ale nie zastępuje walidacji struktury danych wejściowych. Engineered dataframe
+również przechodzi kontrakt Pandera przed treningiem.
 
 ## Schemat po przetworzeniu
 
@@ -60,3 +64,28 @@ targetu. Na 20% holdoucie uzyskuje orientacyjnie **MAE ≈ 9 400**, **RMSE ≈ 1
 Najważniejsze cechy według permutation importance to zwykle RAM, SSD, typ laptopa i poziom
 CPU. Aktualne wartości metryk są zapisywane w `model/artifacts/metrics.json` i dostępne
 przez `GET /model-info`.
+
+## Tracking eksperymentów
+
+Trening może logować runy do MLflow. Każdy run zawiera parametry AutoML, metryki holdout,
+źródło danych, najlepszy estymator i artefakt `model.joblib`. Dzięki temu można porównać
+kolejne uruchomienia treningu bez ręcznego przepisywania wyników z konsoli. Lokalny katalog
+`mlruns/` nie jest częścią repozytorium, bo jest artefaktem pracy eksperymentalnej.
+
+## Walidacja retreningu
+
+Retraining uruchamiany przez API używa bramek jakości z `config.yaml`. Pipeline najpierw
+sprawdza schemat i minimalną liczbę rekordów, potem trenuje model w katalogu tymczasowym
+i promuje nowe artefakty tylko wtedy, gdy metryki spełniają progi `min_r2` oraz `max_mae`.
+
+## Monitoring driftu danych
+
+Podczas treningu `model.train` zapisuje w `metrics.json` profil referencyjny danych:
+statystyki cech numerycznych, odsetek braków i rozkłady najczęstszych kategorii. Endpoint
+`GET /data-drift` ładuje aktualny dataset, buduje ten sam profil i porównuje go z profilem
+referencyjnym. Dla cech numerycznych raport używa standaryzowanej zmiany średniej, a dla
+cech kategorycznych odległości total variation między rozkładami.
+
+Ten raport nie zastępuje walidacji schematu ani testu jakości modelu, ale pomaga przed
+retreningiem zauważyć, że nowe dane mogą pochodzić z innej populacji, np. mają wyraźnie
+więcej laptopów gamingowych, inną strukturę marek albo przesunięty rozkład RAM-u.

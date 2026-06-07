@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
 import yaml
 from pydantic import BaseModel, Field
@@ -45,6 +45,28 @@ class ModelConfig(BaseModel):
     seed: int = 42
 
 
+class ValidationConfig(BaseModel):
+    """Quality gates for data validation and model promotion."""
+
+    min_rows: int = Field(100, gt=0)
+    min_r2: float = Field(0.7, le=1.0)
+    max_mae: Optional[float] = Field(25000.0, gt=0)
+
+
+class MlflowTrackingConfig(BaseModel):
+    """Optional MLflow experiment tracking settings."""
+
+    enabled: bool = True
+    tracking_uri: str = "mlruns"
+    experiment_name: str = "laptop-price-automl"
+
+
+class TrackingConfig(BaseModel):
+    """Experiment tracking configuration."""
+
+    mlflow: MlflowTrackingConfig = Field(default_factory=MlflowTrackingConfig)
+
+
 class ApiConfig(BaseModel):
     """FastAPI host/port."""
 
@@ -63,6 +85,8 @@ class AppConfig(BaseModel):
 
     data: DataConfig
     model: ModelConfig
+    validation: ValidationConfig = Field(default_factory=ValidationConfig)
+    tracking: TrackingConfig = Field(default_factory=TrackingConfig)
     api: ApiConfig
     ui: UiConfig
 
