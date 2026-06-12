@@ -24,7 +24,7 @@ ui:
 	$(VENV_PY) -m streamlit run app/ui.py
 
 mlflow:
-	$(VENV_PY) -m mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+	MLFLOW_ALLOW_FILE_STORE=true $(VENV_PY) -m mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 
 test:
 	$(VENV_PY) -m pytest

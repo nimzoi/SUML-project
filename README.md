@@ -1,4 +1,6 @@
-# Wycena laptopa
+# Spec2Price
+
+*Inteligentna wycena laptopów — ze specyfikacji prosto do ceny.*
 
 ![CI](https://github.com/nimzoi/SUML-project/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
@@ -214,7 +216,7 @@ zapisujemy jako artefakt `model.joblib`, a nie jako wpis w rejestrze.
 
 ```bash
 python -m model.train
-make mlflow     # albo: mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+make mlflow     # albo: MLFLOW_ALLOW_FILE_STORE=true mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 ```
 
 Panel MLflow jest wtedy dostępny pod http://127.0.0.1:5000. W wariancie Docker panel startuje

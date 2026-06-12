@@ -71,3 +71,16 @@ def test_saved_pipeline_predicts(tmp_path):
     )
     prediction = pipeline.predict(row)
     assert prediction[0] > 0
+
+
+def test_tracking_opts_into_local_file_store_backend():
+    """Importing tracking opts into MLflow's file store (MLflow 3.x raises on it otherwise).
+
+    Regression guard for the Docker/CI build, where the pinned MLflow refuses the local
+    file store unless MLFLOW_ALLOW_FILE_STORE is set.
+    """
+    import os
+
+    import model.tracking  # noqa: F401  (import side effect sets the env var)
+
+    assert os.environ.get("MLFLOW_ALLOW_FILE_STORE") == "true"

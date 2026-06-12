@@ -1,4 +1,4 @@
-# Instrukcja instalacji i uruchomienia — Wycena laptopa
+# Instrukcja instalacji i uruchomienia — Spec2Price
 
 Aplikacja szacuje cenę laptopa na podstawie jego specyfikacji. Dostępna jest jako
 **strona (Streamlit)** oraz **API (FastAPI)**. Ten dokument prowadzi krok po kroku — od
@@ -70,7 +70,7 @@ Aby zatrzymać: `Ctrl+C`, a następnie `docker compose down`.
 
 Docker Compose startuje UI, API **oraz** MLflow UI (usługa `mlflow`). W wariancie lokalnym
 (bez Dockera) MLflow jest opcjonalny — panel uruchomisz osobno poleceniem
-`python -m mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000`.
+`MLFLOW_ALLOW_FILE_STORE=true python -m mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000`.
 
 ---
 
@@ -186,10 +186,12 @@ Jeśli `tracking.mlflow.enabled` jest ustawione na `true`, trening zapisuje run 
 katalogu `mlruns/`. Panel eksperymentów uruchomisz komendą:
 
 ```bash
-mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+MLFLOW_ALLOW_FILE_STORE=true mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 ```
 
-W projekcie z `make` można użyć skrótu `make mlflow`.
+W projekcie z `make` można użyć skrótu `make mlflow` (ustawia tę zmienną automatycznie).
+MLflow 3.x wymaga `MLFLOW_ALLOW_FILE_STORE=true` dla lokalnego file store — `make mlflow`
+oraz Docker robią to za Ciebie.
 
 ---
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Dict
 
@@ -10,6 +11,11 @@ from config import AppConfig
 from model.schemas import ModelInfo
 
 logger = logging.getLogger(__name__)
+
+# MLflow >= 3.x refuses the local file-store backend by default and raises on first use.
+# This project intentionally uses the lightweight file store (no database backend), so we opt
+# in here once, before any MLflow call (the training/build step, CI, and local runs import this).
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
 
 
 def log_training_run(config: AppConfig, report: ModelInfo) -> Dict[str, str]:
