@@ -7,6 +7,15 @@ zera do działającej aplikacji — bez konieczności konfigurowania czegokolwie
 > Wskazówka: jeśli chcesz tylko zobaczyć, jak działa — wybierz **Wariant A (Docker)**.
 > To jedna komenda i nie wymaga instalowania Pythona ani żadnych bibliotek ręcznie.
 
+## Wymagania wstępne
+
+Na gołym Windowsie wystarczy **jedno** z dwóch — nie potrzeba `make`, `git-bash` ani innych narzędzi:
+
+| Ścieżka | Jedyne wymaganie | Co dostajesz |
+|---|---|---|
+| **A — Docker** | Docker Desktop / Docker Compose | UI + API + MLflow jednym poleceniem, bez Pythona |
+| **B — Python** | Python 3.11+ | uruchomienie przez dołączone skrypty `setup.ps1` / `run.ps1` |
+
 ---
 
 ## Jak czytać ten system
@@ -40,8 +49,12 @@ Po zbudowaniu (model trenuje się automatycznie podczas budowy obrazu, ~1 min) o
 
 - **Aplikacja (UI):** http://localhost:8501
 - **API + interaktywna dokumentacja:** http://localhost:8000/docs
+- **MLflow UI (historia treningów):** http://localhost:5000
 
 Aby zatrzymać: `Ctrl+C`, a następnie `docker compose down`.
+
+> **Na prezentację (sala):** zbuduj obraz wcześniej (`docker compose build`) — na miejscu
+> wystarczy wtedy `docker compose up` (sekundy zamiast minut, bez zależności od internetu na sali).
 
 ---
 
@@ -53,17 +66,26 @@ Aby zatrzymać: `Ctrl+C`, a następnie `docker compose down`.
 | FastAPI | http://localhost:8000 | Warstwa integracyjna dla innych aplikacji i procesów batch |
 | Swagger UI | http://localhost:8000/docs | Testowanie API i walidacji payloadów bez pisania klienta |
 | ReDoc | http://localhost:8000/redoc | Czytelna specyfikacja kontraktów API |
-| MLflow UI | http://127.0.0.1:5000 | Historia eksperymentów, metryk i artefaktów modelu po `make mlflow` |
+| MLflow UI | http://localhost:5000 | Historia eksperymentów, metryk i artefaktów modelu (w Dockerze startuje automatycznie) |
 
-W standardowym uruchomieniu Docker Compose startuje UI i API. MLflow UI jest opcjonalne:
-runy zapisują się przy treningu w `mlruns/`, a panel uruchamiasz tylko wtedy, gdy chcesz je
-obejrzeć.
+Docker Compose startuje UI, API **oraz** MLflow UI (usługa `mlflow`). W wariancie lokalnym
+(bez Dockera) MLflow jest opcjonalny — panel uruchomisz osobno poleceniem
+`python -m mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000`.
 
 ---
 
 ## Wariant B — lokalnie, bez Dockera (Python)
 
 **Czego potrzebujesz:** Python 3.11 lub nowszy ([python.org](https://www.python.org/downloads/)).
+
+**Windows — najprościej (dwa polecenia, bez `make`):**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1   # instalacja zaleznosci (raz, tworzy .venv)
+powershell -ExecutionPolicy Bypass -File .\run.ps1     # uruchomienie aplikacji (UI)
+```
+
+Albo ręcznie (każdy system):
 
 ```bash
 git clone https://github.com/nimzoi/SUML-project.git

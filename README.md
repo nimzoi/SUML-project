@@ -132,14 +132,25 @@ integracyjnej i MLOps.
 
 ## Uruchomienie lokalne bez Dockera
 
+**Windows (goły, bez `make`) — najprościej:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1   # instalacja (raz, tworzy .venv)
+powershell -ExecutionPolicy Bypass -File .\run.ps1     # uruchomienie UI -> http://localhost:8501
+```
+
+**Z `make` (wygoda dewelopera, jeśli jest zainstalowany):**
+
 ```bash
-python -m pip install -r requirements-dev.txt
-python -m model.train      # opcjonalnie: artefakt modelu jest już w repo
+make install               # tworzy .venv i instaluje wszystko (runtime + dev)
+                           # Windows bez make: powershell -ExecutionPolicy Bypass -File .\setup.ps1
+make train                 # opcjonalnie: artefakt modelu jest już w repo
 make api                   # albo: uvicorn app.api:app --host 0.0.0.0 --port 8000
 make ui                    # albo: streamlit run app/ui.py
 ```
 
-Na Windowsie, jeśli nie ma `make`, użyj pełnych komend podanych po `albo:`.
+Cele `make` używają `.venv` automatycznie, więc nie trzeba ręcznie aktywować środowiska.
+Bez `make` użyj skryptów `setup.ps1` + `run.ps1` (sekcja wyżej) albo pełnych komend po `albo:`.
 
 ## Konfiguracja
 
@@ -196,13 +207,20 @@ Każdy trening może zostać zarejestrowany w MLflow. Domyślnie runy zapisują 
 i najlepszym estymatorem oraz artefakt `model.joblib`. Aplikacja nie wymaga uruchomionego
 serwera MLflow do predykcji; tracking jest dodatkiem do audytu eksperymentów.
 
+Zakładka **Models** (Model Registry) jest celowo pusta: lokalny backend plikowy (`mlruns/`)
+obsługuje wyłącznie *tracking* (parametry, metryki, artefakty). Rejestr modeli wymagałby
+backendu bazodanowego (np. `sqlite`), co jest poza zakresem tego projektu — wytrenowany model
+zapisujemy jako artefakt `model.joblib`, a nie jako wpis w rejestrze.
+
 ```bash
 python -m model.train
 make mlflow     # albo: mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 ```
 
-Panel MLflow jest wtedy dostępny pod http://127.0.0.1:5000. Tracking można wyłączyć w
-`config.yaml` przez `tracking.mlflow.enabled: false`.
+Panel MLflow jest wtedy dostępny pod http://127.0.0.1:5000. W wariancie Docker panel startuje
+automatycznie razem z API i UI (`docker compose up`) jako usługa `mlflow`, również pod
+http://127.0.0.1:5000 — nie jest to więc osobny, ręcznie uruchamiany serwis. Tracking można
+wyłączyć w `config.yaml` przez `tracking.mlflow.enabled: false`.
 
 ## API
 
