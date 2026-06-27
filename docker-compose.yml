@@ -18,8 +18,7 @@ services:
     ports:
       - "8501:8501"
     depends_on:
-      api:
-        condition: service_healthy
+      - api
   mlflow:
     image: laptop-price:latest
     command: python -m mlflow ui --backend-store-uri /app/mlruns --host 0.0.0.0 --port 5000

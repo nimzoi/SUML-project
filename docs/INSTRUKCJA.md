@@ -45,7 +45,8 @@ cd SUML-project
 docker compose up --build
 ```
 
-Po zbudowaniu (model trenuje się automatycznie podczas budowy obrazu, ~1 min) otwórz:
+Pierwszy build to kilka minut (instalacja zależności + trening modelu w obrazie); kolejne
+`docker compose up` startują w sekundach. Po zbudowaniu otwórz:
 
 - **Aplikacja (UI):** http://localhost:8501
 - **API + interaktywna dokumentacja:** http://localhost:8000/docs

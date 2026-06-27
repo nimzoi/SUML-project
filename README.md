@@ -116,10 +116,15 @@ docker compose up --build
 
 Po starcie:
 
-- API: http://localhost:8000, dokumentacja OpenAPI pod `/docs`
-- UI: http://localhost:8501
+- **UI:** http://localhost:8501
+- **API + dokumentacja:** http://localhost:8000/docs
+- **MLflow:** http://localhost:5000
 
-Dataset jest w repozytorium, a model trenuje się podczas budowy obrazu.
+Zatrzymanie: `Ctrl+C`, potem `docker compose down`. Pierwszy build to kilka minut
+(zależności + trening modelu w obrazie); kolejne `docker compose up` startują w sekundach.
+
+> **Na prezentację:** zbuduj obraz wcześniej (`docker compose build`), a na sali odpal tylko
+> `docker compose up` — rusza w sekundy i nie wymaga internetu.
 
 ## Mapa usług i portów
 
