@@ -23,7 +23,6 @@ from config import load_config
 from data.load import load_data
 from data.monitoring import build_data_profile, compare_data_profiles
 from model.schemas import DataProfile
-from model.train import train
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 REQUEST_TIMEOUT = 10
@@ -134,6 +133,10 @@ def _local_model():
     """Load the model artifact, training it once if missing in standalone mode."""
     config = load_config()
     if not config.artifact_path.exists():
+        # Lazy import: keeps flaml/xgboost out of the UI's startup import path
+        # (only needed to train, which never happens on Streamlit Cloud — model is in repo).
+        from model.train import train  # pylint: disable=import-outside-toplevel
+
         train(config)
     return joblib.load(config.artifact_path)
 

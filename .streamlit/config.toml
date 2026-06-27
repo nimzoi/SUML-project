@@ -1,0 +1,9 @@
+# Motyw aplikacji (czytany też przez Streamlit Community Cloud).
+# Jasny, neutralny wygląd — bezpieczny na rzutniku i zgodny z jasnym tłem wykresów.
+[theme]
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f1f5f9"
+textColor = "#0f172a"
+font = "sans serif"

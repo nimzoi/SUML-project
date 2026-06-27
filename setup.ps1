@@ -10,11 +10,24 @@
 $ErrorActionPreference = "Stop"
 Set-Location -Path $PSScriptRoot
 
-# Wybierz dostepny launcher Pythona (py -3 jest pewniejszy na Windows niz samo "python").
-$pythonCmd = if (Get-Command py -ErrorAction SilentlyContinue) { "py -3" } else { "python" }
+# Projekt dziala na Pythonie 3.11-3.13. 3.14+ NIE jest wspierany: numpy 2.2.6 nie ma
+# jeszcze wheeli dla 3.14, wiec pip probowalby kompilowac ze zrodel i pada na Windows.
+# Dlatego NIE uzywamy "py -3" (to wybiera NAJNOWSZY Python, czyli moze 3.14) tylko
+# szukamy pierwszej wspieranej wersji: preferujemy najnowsza dzialajaca (3.13).
+$supported = @("3.13", "3.12", "3.11")
+$pyVer = $null
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    foreach ($v in $supported) {
+        & py "-$v" --version *> $null
+        if ($LASTEXITCODE -eq 0) { $pyVer = $v; break }
+    }
+}
+if (-not $pyVer) {
+    throw "Nie znaleziono wspieranego Pythona (3.11/3.12/3.13). Masz zapewne tylko 3.14+, dla ktorego brakuje wheeli (numpy 2.2.6). Zainstaluj Pythona 3.13: https://www.python.org/downloads/"
+}
 
-Write-Host "==> Tworze srodowisko wirtualne .venv ..." -ForegroundColor Cyan
-Invoke-Expression "$pythonCmd -m venv .venv"
+Write-Host "==> Tworze srodowisko wirtualne .venv na Pythonie $pyVer ..." -ForegroundColor Cyan
+& py "-$pyVer" -m venv .venv
 
 $venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path $venvPython)) {

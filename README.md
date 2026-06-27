@@ -3,7 +3,7 @@
 *Inteligentna wycena laptopów — ze specyfikacji prosto do ceny.*
 
 ![CI](https://github.com/nimzoi/SUML-project/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Python](https://img.shields.io/badge/python-3.11--3.13-blue)
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000)
 ![pylint](https://img.shields.io/badge/pylint-10.00%2F10-brightgreen)
 
@@ -96,7 +96,7 @@ SUML-project/
 
 ## Wymagania
 
-- Python 3.11+
+- Python 3.11–3.13 (3.14 jeszcze nieobsługiwany — brak gotowych wheeli dla `numpy 2.2.6`)
 - Docker + Docker Compose, jeśli wybierasz uruchomienie kontenerowe
 
 Zależności są przypięte w `requirements.txt`. Dla Dockera instalują się podczas budowy

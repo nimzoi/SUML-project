@@ -14,7 +14,7 @@ Na gołym Windowsie wystarczy **jedno** z dwóch — nie potrzeba `make`, `git-b
 | Ścieżka | Jedyne wymaganie | Co dostajesz |
 |---|---|---|
 | **A — Docker** | Docker Desktop / Docker Compose | UI + API + MLflow jednym poleceniem, bez Pythona |
-| **B — Python** | Python 3.11+ | uruchomienie przez dołączone skrypty `setup.ps1` / `run.ps1` |
+| **B — Python** | Python 3.11–3.13 | uruchomienie przez dołączone skrypty `setup.ps1` / `run.ps1` |
 
 ---
 
@@ -76,7 +76,7 @@ Docker Compose startuje UI, API **oraz** MLflow UI (usługa `mlflow`). W warianc
 
 ## Wariant B — lokalnie, bez Dockera (Python)
 
-**Czego potrzebujesz:** Python 3.11 lub nowszy ([python.org](https://www.python.org/downloads/)).
+**Czego potrzebujesz:** Python 3.11–3.13 (3.14 jeszcze nieobsługiwany) ([python.org](https://www.python.org/downloads/)).
 
 **Windows — najprościej (dwa polecenia, bez `make`):**
 
