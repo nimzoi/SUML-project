@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import joblib
 import pandas as pd
@@ -16,6 +17,14 @@ import requests
 import streamlit as st
 from pydantic import ValidationError
 
+# Make the repo root importable so `streamlit run app/ui.py` works as an entry point
+# (Streamlit puts only app/ on sys.path). streamlit_app.py at the repo root is the
+# primary entry point; this keeps the direct app/ui.py path working identically, so a
+# Streamlit Cloud (re)deploy can point at either file.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# isort: off
+# pylint: disable=wrong-import-position
 from app.explain import explain_prediction, price_band, price_sensitivity
 from app.inference import predict_price
 from app.schemas import Company, CpuBrand, GpuBrand, Os, PredictRequest, TypeName
@@ -23,6 +32,9 @@ from config import load_config
 from data.load import load_data
 from data.monitoring import build_data_profile, compare_data_profiles
 from model.schemas import DataProfile
+
+# pylint: enable=wrong-import-position
+# isort: on
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 REQUEST_TIMEOUT = 10
