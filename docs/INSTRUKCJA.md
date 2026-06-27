@@ -111,6 +111,8 @@ Aplikacja otworzy się pod http://localhost:8501. Model jest już w repo; aby pr
 
 ## Wariant C — Streamlit Community Cloud (online, bez instalacji)
 
+**Demo na żywo: https://spec2price-app.streamlit.app**
+
 Aplikacja działa też samodzielnie w chmurze (UI ładuje model bezpośrednio, gdy nie ma API):
 
 1. Upewnij się, że repozytorium jest publiczne (lub autoryzuj Streamlit dla prywatnego).

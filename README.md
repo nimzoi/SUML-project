@@ -6,6 +6,9 @@
 ![Python](https://img.shields.io/badge/python-3.11--3.13-blue)
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000)
 ![pylint](https://img.shields.io/badge/pylint-10.00%2F10-brightgreen)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://spec2price-app.streamlit.app)
+
+**🔗 Demo na żywo:** https://spec2price-app.streamlit.app
 
 Aplikacja szacuje cenę laptopa na podstawie specyfikacji. Model regresyjny jest trenowany
 przez **AutoML (FLAML)**, udostępniony przez **FastAPI** i obsługiwany z poziomu
@@ -278,6 +281,8 @@ pushu oraz pull requeście. Po pushu do `main` workflow buduje obraz Dockera i p
 do GitHub Container Registry jako `ghcr.io/<owner>/laptop-price`.
 
 ## Streamlit Community Cloud
+
+**Demo na żywo: https://spec2price-app.streamlit.app**
 
 UI działa bez osobnego API: gdy endpoint nie odpowiada, ładuje model bezpośrednio
 (model jest w repo, więc start jest szybki). Do wdrożenia wybierz repozytorium
