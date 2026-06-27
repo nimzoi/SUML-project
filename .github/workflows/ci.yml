@@ -35,7 +35,7 @@ jobs:
           yaml.safe_load(Path("docker-compose.yml").read_text(encoding="utf-8"))
           PY
       - name: Lint (pylint >= 8)
-        run: pylint config.py data model app --fail-under=8
+        run: pylint config.py data model app streamlit_app.py --fail-under=8
       - name: Tests
         run: pytest
 

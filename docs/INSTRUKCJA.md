@@ -14,7 +14,7 @@ Na gołym Windowsie wystarczy **jedno** z dwóch — nie potrzeba `make`, `git-b
 | Ścieżka | Jedyne wymaganie | Co dostajesz |
 |---|---|---|
 | **A — Docker** | Docker Desktop / Docker Compose | UI + API + MLflow jednym poleceniem, bez Pythona |
-| **B — Python** | Python 3.11–3.13 | uruchomienie przez dołączone skrypty `setup.ps1` / `run.ps1` |
+| **B — Python** | Python 3.11–3.13 | `pip install -r requirements-dev.txt` + `streamlit run streamlit_app.py` |
 
 ---
 
@@ -78,34 +78,32 @@ Docker Compose startuje UI, API **oraz** MLflow UI (usługa `mlflow`). W warianc
 
 **Czego potrzebujesz:** Python 3.11–3.13 (3.14 jeszcze nieobsługiwany) ([python.org](https://www.python.org/downloads/)).
 
-**Windows — najprościej (dwa polecenia, bez `make`):**
+**Windows (PowerShell):**
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1   # instalacja zaleznosci (raz, tworzy .venv)
-powershell -ExecutionPolicy Bypass -File .\run.ps1     # uruchomienie aplikacji (UI)
+git clone https://github.com/nimzoi/SUML-project.git
+cd SUML-project
+py -3.13 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+streamlit run streamlit_app.py     # UI -> http://localhost:8501
 ```
 
-Albo ręcznie (każdy system):
+**macOS / Linux:**
 
 ```bash
 git clone https://github.com/nimzoi/SUML-project.git
 cd SUML-project
-python -m pip install -r requirements-dev.txt   # instalacja zależności
-python -m model.train                            # opcjonalnie: wytrenowany model jest już w repo
-streamlit run app/ui.py                           # uruchom aplikację (UI)
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+streamlit run streamlit_app.py     # UI -> http://localhost:8501
 ```
 
-Aplikacja otworzy się w przeglądarce pod http://localhost:8501.
+Aplikacja otworzy się pod http://localhost:8501. Model jest już w repo; aby przetrenować:
+`python -m model.train`. Opcjonalnie API w osobnym terminalu:
+`uvicorn app.api:app --host 0.0.0.0 --port 8000`.
 
-Opcjonalnie, aby uruchomić **API** w osobnym terminalu:
-
-```bash
-uvicorn app.api:app --host 0.0.0.0 --port 8000
-```
-
-> **Windows:** powyższe komendy działają w PowerShell. Skróty `make api` / `make ui`
-> wymagają narzędzia `make` (na Windows zwykle go nie ma) — używaj pełnych komend powyżej.
->
 > **Linux:** jeśli pojawi się błąd LightGBM o brakującej bibliotece `libgomp`, zainstaluj ją:
 > `sudo apt-get install libgomp1`.
 
@@ -117,7 +115,7 @@ Aplikacja działa też samodzielnie w chmurze (UI ładuje model bezpośrednio, g
 
 1. Upewnij się, że repozytorium jest publiczne (lub autoryzuj Streamlit dla prywatnego).
 2. Na [share.streamlit.io](https://share.streamlit.io): **New app** → repo `nimzoi/SUML-project`,
-   gałąź `main`, plik główny `app/ui.py` → **Deploy**.
+   gałąź `main`, plik główny `streamlit_app.py` → **Deploy**.
 3. Zależności pobierają się z `requirements.txt`, a `packages.txt` instaluje `libgomp1`.
    Model trenuje się raz przy pierwszym uruchomieniu (~60 s), potem jest zapamiętany.
 
@@ -189,9 +187,8 @@ katalogu `mlruns/`. Panel eksperymentów uruchomisz komendą:
 MLFLOW_ALLOW_FILE_STORE=true mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 ```
 
-W projekcie z `make` można użyć skrótu `make mlflow` (ustawia tę zmienną automatycznie).
-MLflow 3.x wymaga `MLFLOW_ALLOW_FILE_STORE=true` dla lokalnego file store — `make mlflow`
-oraz Docker robią to za Ciebie.
+MLflow 3.x wymaga `MLFLOW_ALLOW_FILE_STORE=true` dla lokalnego file store (komenda wyżej
+ustawia tę zmienną; w Dockerze dzieje się to automatycznie).
 
 ---
 
@@ -222,10 +219,9 @@ nagłówka `X-API-Key`.
 
 | Problem | Rozwiązanie |
 |---|---|
-| Port 8501/8000 zajęty | Zatrzymaj inny proces lub zmień port (`streamlit run app/ui.py --server.port 8600`) |
+| Port 8501/8000 zajęty | Zatrzymaj inny proces lub zmień port (`streamlit run streamlit_app.py --server.port 8600`) |
 | `docker compose` nie działa | Upewnij się, że Docker Desktop jest uruchomiony |
 | Błąd LightGBM o `libgomp` (Linux) | `sudo apt-get install libgomp1` |
-| `make: command not found` (Windows) | Użyj pełnych komend zamiast skrótów `make` (patrz Wariant B) |
 | UI pokazuje „Model niedostępny" | Uruchom najpierw `python -m model.train` |
 
 ---
@@ -233,11 +229,9 @@ nagłówka `X-API-Key`.
 ## Weryfikacja jakości
 
 ```bash
-make test     # testy (pytest)         — lub: pytest
-make lint     # pylint (>= 8; obecnie 10.00/10)
-make format   # formatowanie (black + isort)
-make validate # walidacja konfiguracji i danych
-make mlflow   # lokalny panel MLflow
+pytest                                            # testy
+pylint config.py data model app streamlit_app.py --fail-under=8   # lint (>= 8; 10/10)
+black . && isort .                                # formatowanie
 ```
 
 CI/CD (GitHub Actions) waliduje konfigurację, uruchamia `pylint` i `pytest` przy każdym

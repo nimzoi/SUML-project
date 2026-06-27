@@ -69,9 +69,10 @@ SUML-project/
 ├── requirements-dev.txt     # zależności developerskie i testowe
 ├── Dockerfile               # obraz slim, użytkownik non-root, trening przy buildzie
 ├── docker-compose.yml       # serwisy: api (FastAPI) i ui (Streamlit)
-├── Makefile · pyproject.toml · .pylintrc · packages.txt
+├── pyproject.toml · .pylintrc · packages.txt
 ├── .github/workflows/ci.yml # CI/CD: lint, testy, walidacja configów, publikacja obrazu
 ├── config.py                # typowany loader konfiguracji (Pydantic)
+├── streamlit_app.py         # entrypoint Streamlit (UI) — lokalnie i na Cloud
 ├── data/
 │   ├── raw/laptop_data.csv  # śledzony dataset
 │   ├── contracts.py         # Pandera: schemat raw CSV i engineered dataframe
@@ -134,25 +135,28 @@ integracyjnej i MLOps.
 
 ## Uruchomienie lokalne bez Dockera
 
-**Windows (goły, bez `make`) — najprościej:**
+Potrzebny tylko Python 3.11–3.13. W katalogu projektu:
+
+**Windows (PowerShell):**
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1   # instalacja (raz, tworzy .venv)
-powershell -ExecutionPolicy Bypass -File .\run.ps1     # uruchomienie UI -> http://localhost:8501
+py -3.13 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+streamlit run streamlit_app.py        # UI -> http://localhost:8501
 ```
 
-**Z `make` (wygoda dewelopera, jeśli jest zainstalowany):**
+**macOS / Linux:**
 
 ```bash
-make install               # tworzy .venv i instaluje wszystko (runtime + dev)
-                           # Windows bez make: powershell -ExecutionPolicy Bypass -File .\setup.ps1
-make train                 # opcjonalnie: artefakt modelu jest już w repo
-make api                   # albo: uvicorn app.api:app --host 0.0.0.0 --port 8000
-make ui                    # albo: streamlit run app/ui.py
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+streamlit run streamlit_app.py        # UI -> http://localhost:8501
 ```
 
-Cele `make` używają `.venv` automatycznie, więc nie trzeba ręcznie aktywować środowiska.
-Bez `make` użyj skryptów `setup.ps1` + `run.ps1` (sekcja wyżej) albo pełnych komend po `albo:`.
+Model jest już w repo; aby przetrenować: `python -m model.train`.
+Opcjonalnie API w osobnym terminalu: `uvicorn app.api:app --host 0.0.0.0 --port 8000`.
 
 ## Konfiguracja
 
@@ -216,7 +220,7 @@ zapisujemy jako artefakt `model.joblib`, a nie jako wpis w rejestrze.
 
 ```bash
 python -m model.train
-make mlflow     # albo: MLFLOW_ALLOW_FILE_STORE=true mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+MLFLOW_ALLOW_FILE_STORE=true mlflow ui --backend-store-uri mlruns --host 127.0.0.1 --port 5000
 ```
 
 Panel MLflow jest wtedy dostępny pod http://127.0.0.1:5000. W wariancie Docker panel startuje
@@ -264,11 +268,9 @@ cenę, ale też dlaczego model podbił lub obniżył wycenę względem laptopa b
 ## Testy i jakość
 
 ```bash
-make test     # pytest
-make lint     # pylint >= 8
-make format   # black + isort
-make validate # walidacja configu i aktualnego datasetu
-make mlflow   # lokalny panel eksperymentów MLflow
+pytest                                            # testy
+pylint config.py data model app streamlit_app.py --fail-under=8   # lint (>= 8; 10/10)
+black . && isort .                                # formatowanie
 ```
 
 CI uruchamia walidację plików konfiguracyjnych, `pylint --fail-under=8` i `pytest` przy
@@ -277,11 +279,11 @@ do GitHub Container Registry jako `ghcr.io/<owner>/laptop-price`.
 
 ## Streamlit Community Cloud
 
-`app/ui.py` może działać bez osobnego API: gdy endpoint nie odpowiada, UI ładuje model
-bezpośrednio i w razie potrzeby trenuje go raz przy pierwszym uruchomieniu. Do wdrożenia
-w Streamlit Community Cloud wybierz repozytorium `nimzoi/SUML-project`, gałąź `main` i
-plik startowy `app/ui.py`. Zależności pobierają się z `requirements.txt`, a `packages.txt`
-instaluje `libgomp1` wymagane przez LightGBM.
+UI działa bez osobnego API: gdy endpoint nie odpowiada, ładuje model bezpośrednio
+(model jest w repo, więc start jest szybki). Do wdrożenia wybierz repozytorium
+`nimzoi/SUML-project`, gałąź `main` i plik startowy `streamlit_app.py`. Zależności
+pobierają się z `requirements.txt`, a `packages.txt` instaluje `libgomp1` wymagane
+przez LightGBM.
 
 ## Dokumentacja
 
